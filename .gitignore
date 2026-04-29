@@ -2,6 +2,7 @@
 *.log
 config.properties
 *~
+*.csv
 
 car/src/build/
 car/src/install/
