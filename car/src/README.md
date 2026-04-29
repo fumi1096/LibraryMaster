@@ -19,5 +19,5 @@ sudo python3 setup.py install
 bash build.sh
 
 # 1. 创建规则文件
-
+确定串口位置
 echo 'KERNEL=="ttyUSB*", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE:="0777", SYMLINK+="myserial"' | sudo tee /etc/udev/rules.d/99-rosmaster.rules

@@ -13,3 +13,5 @@ car/src/yahboomcar_bringup/
 car/src/yahboomcar_ctrl/
 car/src/yahboomcar_description/
 car/src/py_install/
+
+rag/data/lancedb/
