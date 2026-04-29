@@ -23,9 +23,20 @@ schema = pa.schema([
 
 print(f"开始分块读取 {input_file} ...")
 
+col_types = {
+    '书名': str,
+    '作者': str,
+    '出版社': str,
+    '关键词': str,
+    '摘要': str,
+    '中国图书分类号': str,
+    '出版年月': str,
+    'embedding': str,  # 先读取为字符串，后续转换为列表
+}
+
 # 3. 分块读取循环
 # pd.read_csv 返回一个 TextFileReader 对象，可以迭代
-reader = pd.read_csv(input_file, chunksize=chunk_size)
+reader = pd.read_csv(input_file, chunksize=chunk_size, dtype=col_types)
 
 for i, chunk in enumerate(reader):
     print(f"正在处理第 {i+1} 块数据 (包含 {len(chunk)} 行)...")
