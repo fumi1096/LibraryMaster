@@ -1,0 +1,7 @@
+[0.000000] (-) TimerEvent: {}
+[0.001058] (-) JobUnselected: {'identifier': 'robot_localization'}
+[0.001447] (-) JobUnselected: {'identifier': 'yahboomcar_base_node'}
+[0.001775] (-) JobUnselected: {'identifier': 'yahboomcar_bringup'}
+[0.002059] (-) JobUnselected: {'identifier': 'yahboomcar_ctrl'}
+[0.002322] (-) JobUnselected: {'identifier': 'yahboomcar_description'}
+[0.002585] (-) EventReactorShutdown: {}
