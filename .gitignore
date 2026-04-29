@@ -2,6 +2,7 @@
 *.log
 config.properties
 *~
+
 car/src/build/
 car/src/install/
 car/src/log/
