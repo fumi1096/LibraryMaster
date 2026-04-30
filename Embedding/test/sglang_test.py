@@ -2,7 +2,7 @@ from openai import OpenAI
 
 # 1. 初始化客户端，指向本地 SGLang 服务
 client = OpenAI(
-    base_url="http://172.21.178.62:30000/v1",
+    base_url="http://127.0.0.1:30000/v1",
     api_key="EMPTY"  # SGLang 本地部署通常不需要 API Key
 )
 

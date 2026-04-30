@@ -15,3 +15,5 @@ car/src/yahboomcar_description/
 car/src/py_install/
 
 rag/data/lancedb/
+
+Embedding/model/Qwen3_embedding-0.6b/
