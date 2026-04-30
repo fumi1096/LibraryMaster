@@ -4,7 +4,7 @@ import pyarrow as pa
 import ast
 
 input_file = "/data/out.csv"
-chunk_size = 10
+chunk_size = 100
 db_path = "/data/lancedb"
 embedding_size = 1024
 db = lancedb.connect(db_path)
