@@ -3,10 +3,10 @@ import pandas as pd
 import pyarrow as pa
 import ast
 
-input_file = "/data/out.csv"
-chunk_size = 100
-db_path = "/data/lancedb"
-embedding_size = 1024
+input_file = "/data/out.csv"    #输入文件路径，根据实际情况修改
+chunk_size = 100     #分片大小，具体数值可根据内存情况调整
+db_path = "/data/lancedb"       #Lancedb 数据库路径，根据实际情况修改
+embedding_size = 1024           #嵌入向量的维度
 db = lancedb.connect(db_path)
 
 schema = pa.schema([
@@ -19,6 +19,7 @@ schema = pa.schema([
     pa.field("出版年月", pa.date32()),
     pa.field("vector", pa.list_(pa.float32(), list_size=embedding_size)),
 ])
+
 #tbl = db.create_table("empty_table", schema=schema)
 
 print(f"开始分块读取 {input_file} ...")
