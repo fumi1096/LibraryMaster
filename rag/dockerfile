@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # 安装依赖 (lancedb + fastapi + uvicorn)
-RUN pip install --no-cache-dir lancedb fastapi uvicorn pandas pydantic
+RUN pip install --no-cache-dir lancedb fastapi uvicorn pandas
 
 #COPY ./src /app
 
@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir lancedb fastapi uvicorn pandas pydantic
 EXPOSE 9014
 
 # 启动命令
-CMD ["python", "main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9014"]
