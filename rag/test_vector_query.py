@@ -20,6 +20,10 @@ import requests
 
 API_URL = os.getenv("API_URL", "http://localhost:9014/rag")
 
+# 绕过系统 HTTP 代理（本地请求不需要走代理）
+SESSION = requests.Session()
+SESSION.trust_env = False
+
 
 def test_local():
     """本地直接调用 vector_query 模块 (需要 lancedb + openai + SGLang)"""
@@ -65,7 +69,7 @@ def test_api():
 
     # 检查 API 是否运行
     try:
-        resp = requests.get(f"{API_URL}/", timeout=5)
+        resp = SESSION.get(f"{API_URL}/", timeout=5)
         if resp.status_code != 200:
             print(f"API 异常 (状态码 {resp.status_code})")
             return
@@ -79,7 +83,7 @@ def test_api():
     print(f"\n查询文本: {query_data['text']}")
     print("正在请求 /rag/search ...")
 
-    resp = requests.post(
+    resp = SESSION.post(
         f"{API_URL}/search",
         json=query_data,
         headers={"Content-Type": "application/json"},

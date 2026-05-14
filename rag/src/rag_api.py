@@ -1,9 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from pydantic import BaseModel
 import lancedb
 import pandas as pd
 from typing import List, Dict, Any, Optional
 
+router = APIRouter(tags=["RAG"])
+# 保留 app 实例以兼容直接运行: python rag_api.py
 app = FastAPI(title="RAG Query API", description="Simple RAG query interface for vector search")
 
 # 数据库配置
@@ -37,11 +39,11 @@ class SearchResult(BaseModel):
     出版年月: str
     similarity: float
 
-@app.get("/")
+@router.get("/")
 def read_root():
     return {"message": "RAG Query API is running. Use /query endpoint for vector search."}
 
-@app.post("/query", response_model=List[SearchResult])
+@router.post("/query", response_model=List[SearchResult])
 def query_vector(query: VectorQuery):
     """
     执行向量搜索查询
@@ -95,7 +97,7 @@ def query_vector(query: VectorQuery):
         )
 
 
-@app.post("/search", response_model=TextQueryResponse)
+@router.post("/search", response_model=TextQueryResponse)
 def search_by_text(query: TextQuery):
     """
     一站式文本搜索：输入文本 → 自动向量化 → 向量检索
@@ -120,7 +122,7 @@ def search_by_text(query: TextQuery):
         )
 
 
-@app.get("/tables")
+@router.get("/tables")
 def list_tables():
     """列出数据库中的所有表"""
     try:
@@ -132,7 +134,7 @@ def list_tables():
             detail=f"Failed to list tables: {str(e)}"
         )
 
-@app.get("/table_info")
+@router.get("/table_info")
 def get_table_info():
     """获取books表的基本信息"""
     try:
@@ -172,6 +174,9 @@ def get_table_info():
             status_code=500,
             detail=f"Failed to get table info: {str(e)}"
         )
+
+# 让 app 也注册所有路由（兼容直接 python rag_api.py 运行）
+app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn

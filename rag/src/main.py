@@ -1,11 +1,11 @@
 from fastapi import FastAPI
-from rag_api import app as rag_app
+from rag_api import router as rag_router
 
 # 创建主应用
 app = FastAPI(title="LibraryMaster RAG API", description="RAG API for LibraryMaster System")
 
-# 将RAG API集成到主应用中
-app.mount("/rag", rag_app)
+# 将 RAG 路由注册到 /rag 前缀下
+app.include_router(rag_router, prefix="/rag")
 
 # 根路径
 @app.get("/")
