@@ -14,6 +14,7 @@ def read_root():
         "message": "Hello! LibraryMaster RAG API is running.",
         "endpoints": {
             "rag_query": "/rag/query",
+            "rag_search": "/rag/search",
             "rag_tables": "/rag/tables",
             "rag_table_info": "/rag/table_info"
         }

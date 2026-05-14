@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import lancedb
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 app = FastAPI(title="RAG Query API", description="Simple RAG query interface for vector search")
 
@@ -14,6 +14,17 @@ db = lancedb.connect(db_path)
 class VectorQuery(BaseModel):
     vector: List[float]  # 查询向量
     count: int = 5      # 返回结果数量，默认为5
+
+class TextQuery(BaseModel):
+    text: str            # 查询文本
+    count: int = 5       # 返回结果数量，默认为5
+
+class TextQueryResponse(BaseModel):
+    query: str
+    vector_preview: List[float]
+    vector_dim: int
+    results: List[Dict[str, Any]]
+    total: int
 
 # 响应模型
 class SearchResult(BaseModel):
@@ -82,6 +93,32 @@ def query_vector(query: VectorQuery):
             status_code=500,
             detail=f"Query failed: {str(e)}"
         )
+
+
+@app.post("/search", response_model=TextQueryResponse)
+def search_by_text(query: TextQuery):
+    """
+    一站式文本搜索：输入文本 → 自动向量化 → 向量检索
+
+    Args:
+        query: 包含查询文本和结果数量的请求
+
+    Returns:
+        包含查询文本、向量预览和搜索结果的响应
+    """
+    try:
+        from vector_query import VectorQuery
+
+        vq = VectorQuery()
+        result = vq.search_by_text(query.text, count=query.count)
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Search failed: {str(e)}"
+        )
+
 
 @app.get("/tables")
 def list_tables():

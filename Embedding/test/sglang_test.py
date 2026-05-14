@@ -14,6 +14,7 @@ response = client.embeddings.create(
     input=input_with_dim
     #dimensions=512  # <--- 关键：在这里直接指定你想要的维度！
                     # 你可以填 512, 768, 1024 等任意数值 (32~2560)
+                    #这个功能有问题它只能输出1024维度的向量
 )
 
 # 3. 验证结果
