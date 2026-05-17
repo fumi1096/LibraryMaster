@@ -22,3 +22,8 @@ bash build.sh
 # 1. 创建规则文件
 确定串口位置
 echo 'KERNEL=="ttyUSB*", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE:="0777", SYMLINK+="myserial"' | sudo tee /etc/udev/rules.d/99-rosmaster.rules
+
+
+双目视觉
+安装tros-humble-hobot-stereonet功能包
+使用car/src/camera_start.sh启动

@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-mycar1 (FourWD) 综合测试程序
+mycar00 (FourWD) 综合测试程序
 
 功能：按顺序执行一系列标准测试，验证小车的各项基本功能
 - 前进、后退、左转、右转
@@ -40,7 +40,7 @@ class FourWDTest(Node):
         self.wait_time = 0.5        # 测试间等待时间 (s)
 
         self.get_logger().info("=" * 50)
-        self.get_logger().info("🚗 mycar1 (FourWD) 综合测试程序")
+        self.get_logger().info("🚗 mycar00 (FourWD) 综合测试程序")
         self.get_logger().info("=" * 50)
         self.get_logger().info("线速度: %.2f m/s" % self.linear_speed)
         self.get_logger().info("角速度: %.2f rad/s" % self.angular_speed)
@@ -146,7 +146,7 @@ def main():
     test_node = FourWDTest()
 
     print("\n" + "=" * 50)
-    print("  🚗 mycar1 (FourWD) 综合测试程序")
+    print("  🚗 mycar00 (FourWD) 综合测试程序")
     print("=" * 50)
     print("  请选择:")
     print("   1. 运行全部测试")

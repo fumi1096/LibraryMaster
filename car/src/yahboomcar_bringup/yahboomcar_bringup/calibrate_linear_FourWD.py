@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-mycar1 (FourWD) 线性速度校准程序
+mycar00 (FourWD) 线性速度校准程序
 
 功能：校准前进/后退的线性速度比例因子 (linear_scale_x)
 通过让小车实际行驶一段距离，对比理论值和实际值，计算校准系数。

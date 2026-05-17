@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-mycar1 (FourWD) 简单交互测试程序
+mycar00 (FourWD) 简单交互测试程序
 
 功能：通过交互菜单选择，测试小车的基本运动功能
 - 快速测试：前进→后退→左转→右转
@@ -36,7 +36,7 @@ class SimpleFourWDTest(Node):
         self.status_pub = self.create_publisher(String, 'test_status', 10)
 
         self.get_logger().info("=" * 50)
-        self.get_logger().info("🚗 mycar1 (FourWD) 简单测试程序")
+        self.get_logger().info("🚗 mycar00 (FourWD) 简单测试程序")
         self.get_logger().info("=" * 50)
         self.get_logger().info("请确保 FourWD_driver 节点已启动！")
         self.get_logger().info("=" * 50)
@@ -182,7 +182,7 @@ def main():
     test_node = SimpleFourWDTest()
 
     print("\n" + "=" * 50)
-    print("   🚗 mycar1 (FourWD) 简单测试程序")
+    print("   🚗 mycar00 (FourWD) 简单测试程序")
     print("=" * 50)
     print("  请选择测试模式:")
     print("   1. 快速测试 (推荐)")

@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-mycar1 (FourWD) 自主巡逻程序
+mycar00 (FourWD) 自主巡逻程序
 
 功能：让小车按照预设路径自主行驶
 - 方形巡逻：走正方形路径
@@ -39,7 +39,7 @@ class FourWDPatrol(Node):
         self.patrol_angle = 90.0
 
         self.get_logger().info("=" * 50)
-        self.get_logger().info("🚗 mycar1 (FourWD) 自主巡逻程序")
+        self.get_logger().info("🚗 mycar00 (FourWD) 自主巡逻程序")
         self.get_logger().info("=" * 50)
         self.get_logger().info("速度: %.2f m/s, 角速度: %.2f rad/s" %
                               (self.linear_speed, self.angular_speed))
@@ -145,7 +145,7 @@ def main():
     patrol = FourWDPatrol()
 
     print("\n" + "=" * 50)
-    print("  🚗 mycar1 (FourWD) 自主巡逻")
+    print("  🚗 mycar00 (FourWD) 自主巡逻")
     print("=" * 50)
     print("  请选择巡逻模式:")
     print("   1. 方形巡逻 (1圈)")

@@ -11,7 +11,7 @@
  * 与 base_node_X3 的区别：
  * - 适用于四轮独立驱动、差速转向的普通轮小车
  * - vy（横向速度）始终为 0，不做横向运动学处理
- * - child_frame_id 为 base_footprint（与 mycar1 URDF 匹配）
+ * - child_frame_id 为 base_footprint（与 mycar00 URDF 匹配）
  */
 
 #include <geometry_msgs/msg/transform_stamped.hpp>

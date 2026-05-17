@@ -2,13 +2,13 @@
 # encoding: utf-8
 """
 四驱普通轮子驱动节点 (FourWD_driver)
-适用于四轮独立驱动、差速转向的普通轮小车（如 mycar1）
+适用于四轮独立驱动、差速转向的普通轮小车（如 mycar00）
 
 与 X3 驱动节点的区别：
 1. car_type = 6 (FOURWD)，表示四驱普通轮子
 2. vy（横向速度）强制设为 0，普通轮子不支持横向移动
-3. 关节名适配 mycar1 的 URDF：fl_joint, fr_joint, br_joint, bl_joint
-4. IMU link 名适配 mycar1：imu_Link（注意大小写）
+3. 关节名适配 mycar00 的 URDF：fl_joint, fr_joint, br_joint, bl_joint
+4. IMU link 名适配 mycar00：imu_Link（注意大小写）
 
 硬件依赖：Rosmaster_Lib（与厂家驱动板通信）
 """
@@ -51,7 +51,7 @@ class yahboomcar_driver(Node):
         self.declare_parameter('car_type', 'FOURWD')
         self.car_type = self.get_parameter('car_type').get_parameter_value().string_value
 
-        # 注意：mycar1 URDF 中 IMU link 名为 imu_Link（大写L）
+        # 注意：mycar00 URDF 中 IMU link 名为 imu_Link（大写L）
         self.declare_parameter('imu_link', 'imu_Link')
         self.imu_link = self.get_parameter('imu_link').get_parameter_value().string_value
 
