@@ -35,37 +35,43 @@ else
     exit 1
 fi
 
-# ---- 2. 检查依赖 ----
-echo "[2/4] 检查依赖..."
-MISSING=""
-for pkg in slam_toolbox nav2_map_server rviz2; do
-    if ! ros2 pkg prefix "$pkg" &>/dev/null; then
-        MISSING="$MISSING $pkg"
+# ---- 2. 安装缺失的系统依赖 ----
+echo "[2/5] 检查系统依赖..."
+MISSING_DEPS=""
+for dep in ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-rviz2 \
+           ros-humble-joint-state-publisher ros-humble-joint-state-publisher-gui; do
+    if ! dpkg -l "$dep" 2>/dev/null | grep -q '^ii'; then
+        MISSING_DEPS="$MISSING_DEPS $dep"
     fi
 done
-if [ -n "$MISSING" ]; then
-    echo "缺少依赖包:$MISSING"
-    echo "请运行: sudo apt install -y ros-humble-slam-toolbox ros-humble-navigation2 ros-humble-rviz2"
-    exit 1
+if [ -n "$MISSING_DEPS" ]; then
+    echo "  安装缺失依赖:$MISSING_DEPS"
+    sudo apt install -y $MISSING_DEPS
+else
+    echo "  ✓ 系统依赖完整"
 fi
-echo "  ✓ 依赖检查通过"
 
-# ---- 3. 编译 ----
-echo "[3/4] 编译 PC 端包..."
+# ---- 3. 清理旧编译缓存 ----
+echo "[3/5] 清理旧编译缓存..."
+rm -rf build/yahboomcar_description install/yahboomcar_description
+rm -rf build/mycar00 install/mycar00
+rm -rf build/yahboomcar_ctrl install/yahboomcar_ctrl
+rm -rf build/mycar_slam install/mycar_slam
 
-# PC 端不需要编译硬件驱动包（yahboomcar_bringup, yahboomcar_base_node）
-# 只需要：URDF 模型 + 可视化 + 遥控 + SLAM
+# ---- 4. 编译 ----
+echo "[4/5] 编译 PC 端包..."
+
 PACKAGES=(
-    yahboomcar_description    # URDF 资源 + RViz 配置
-    mycar00                   # 机器人模型（URDF + meshes）
-    yahboomcar_ctrl           # 键盘/手柄遥控
-    mycar_slam                # SLAM 建图
+    yahboomcar_description
+    mycar00
+    yahboomcar_ctrl
+    mycar_slam
 )
 
 colcon build --packages-select "${PACKAGES[@]}"
 
-# ---- 4. 加载新环境 ----
-echo "[4/4] 加载编译产物..."
+# ---- 5. 加载 ----
+echo "[5/5] 加载编译产物..."
 source install/setup.bash
 
 echo ""
@@ -73,9 +79,9 @@ echo "============================================"
 echo "  PC 端编译完成！"
 echo "============================================"
 echo ""
-echo "下一步（建图流程）："
-echo "  1. 嵌入式:  ./start_mycar00.sh mapping"
-echo "  2. PC:      ros2 launch mycar_slam slam_pc.launch.py"
+echo "建图流程："
+echo "  1. 嵌入式: ./start_mycar00.sh mapping"
+echo "  2. PC:     ros2 launch mycar_slam slam_pc.launch.py"
 echo "  3. PC(另开): ros2 run yahboomcar_ctrl yahboom_keyboard"
 echo ""
 echo "地图保存："

@@ -35,9 +35,10 @@ print("=" * 60)
 def generate_launch_description():
     pkg_bringup = get_package_share_directory('yahboomcar_bringup')
     pkg_desc = get_package_share_directory('yahboomcar_description')
+    pkg_mycar00 = get_package_share_directory('mycar00')
 
-    # mycar00 URDF 路径（相对 yahboomcar_description）
-    mycar00_urdf_path = os.path.join(pkg_desc, '..', '..', 'mycar00', 'urdf', 'mycar00.urdf')
+    # mycar00 URDF 路径
+    mycar00_urdf_path = os.path.join(pkg_mycar00, 'urdf', 'mycar00.urdf')
 
     # ============================================
     # 启动参数
@@ -139,8 +140,8 @@ def generate_launch_description():
     # ============================================
     # 相机管线（默认启用）
     # ============================================
-    # camera_scan.launch.py 位于 car/src/launch/
-    camera_scan_launch_path = os.path.join(pkg_bringup, '..', '..', '..', 'launch', 'camera_scan.launch.py')
+    # camera_scan.launch.py 已纳入 yahboomcar_bringup 包
+    camera_scan_launch_path = os.path.join(pkg_bringup, 'launch', 'camera_scan.launch.py')
     camera_scan_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(camera_scan_launch_path),
         condition=IfCondition(LaunchConfiguration('use_camera')),
