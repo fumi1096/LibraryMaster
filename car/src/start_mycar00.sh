@@ -18,7 +18,7 @@
 
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+SCRIPT_DIR=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" &> /dev/null && pwd)
 cd "$SCRIPT_DIR"
 
 source /opt/tros/humble/setup.bash
