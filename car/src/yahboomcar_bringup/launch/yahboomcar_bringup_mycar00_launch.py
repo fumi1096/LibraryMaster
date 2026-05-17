@@ -138,9 +138,36 @@ def generate_launch_description():
     )
 
     # ============================================
-    # 相机管线（默认启用）
+    # 双目相机 + LaserScan 管线（默认启用）
     # ============================================
-    # camera_scan.launch.py 已纳入 yahboomcar_bringup 包
+    # 1) hobot_stereonet：双目深度相机驱动
+    stereonet_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            get_package_share_directory('hobot_stereonet'),
+            '/launch/stereonet_model_web_visual_v2.4_int16.launch.py'
+        ]),
+        launch_arguments={
+            'stereonet_frame_id': 'camera_Link',
+            'mipi_rotation': '0.0',
+            'mipi_image_width': '640',
+            'mipi_image_height': '352',
+            'mipi_image_framerate': '30.0',
+            'mipi_gdc_enable': 'True',
+            'mipi_lpwm_enable': 'True',
+            'mipi_channel': '2',
+            'mipi_channel2': '0',
+            'mipi_cal_rotation': '0.0',
+            'use_mipi_cam': 'True',
+            'render_type': 'distance',
+            'pointcloud_height_min': '-5.0',
+            'pointcloud_height_max': '5.0',
+            'pointcloud_depth_max': '5.0',
+            'infer_thread_num': '2',
+        }.items(),
+        condition=IfCondition(LaunchConfiguration('use_camera')),
+    )
+
+    # 2) pointcloud_to_laserscan：点云→LaserScan
     camera_scan_launch_path = os.path.join(pkg_bringup, 'launch', 'camera_scan.launch.py')
     camera_scan_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(camera_scan_launch_path),
@@ -176,6 +203,7 @@ def generate_launch_description():
         imu_filter_node,
         # 可选节点
         ekf_node,
+        stereonet_launch,
         camera_scan_launch,
         rviz_node,
     ])
