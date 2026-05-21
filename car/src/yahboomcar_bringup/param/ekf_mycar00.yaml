@@ -7,7 +7,7 @@
 # - base_node_fourwd 的 pub_odom_tf 必须设为 false
 # - slam_toolbox / AMCL 应使用 /odom（融合后）而非 /odom_raw
 
-ekf_filter_node:
+ekf_se_odom:
   ros__parameters:
     # --- 核心参数 ---
     frequency: 30.0                     # 发布频率 (Hz)
