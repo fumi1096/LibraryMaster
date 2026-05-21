@@ -11,8 +11,10 @@ ekf_se_odom:
   ros__parameters:
     # --- 核心参数 ---
     frequency: 30.0                     # 发布频率 (Hz)
-    sensor_timeout: 0.1                 # 传感器超时 (s)
+    sensor_timeout: 0.2                 # 传感器超时 (s)
     two_d_mode: true                    # 2D 模式 (z, roll, pitch 固定为0)
+    print_diagnostics: true             # 打印诊断信息
+    smooth_lagged_data: true            # 平滑滞后数据
 
     # --- 坐标系 ---
     map_frame: map                      # 世界坐标系
@@ -21,10 +23,10 @@ ekf_se_odom:
     world_frame: odom                   # EKF 的世界坐标系（= odom_frame）
 
     # --- 融合输入：里程计 (/odom_raw) ---
-    # 差速轮：只有 vx 和 vth
+    # 差速轮：只使用 vx 和 vyaw 速度
     odom0: /odom_raw
     odom0_config:
-      - false   # x  (pose)  ← Twist 积分的 pose 不直接用，位置由速度推
+      - false   # x  (pose)  ← 只融合速度，位置由 EKF 自己积分
       - false   # y  (pose)
       - false   # z  (pose)
       - false   # roll
@@ -43,7 +45,7 @@ ekf_se_odom:
     odom0_relative: false
 
     # --- 融合输入：IMU (/imu/data) ---
-    # 只使用角速度和线加速度（IMU 不发布绝对朝向时，yaw 设为 false）
+    # 只使用角速度 vyaw 和线加速度 ax/ay，yaw 由 gyro 积分
     imu0: /imu/data
     imu0_config:
       - false   # x
@@ -51,7 +53,7 @@ ekf_se_odom:
       - false   # z
       - false   # roll
       - false   # pitch
-      - false   # yaw            ← IMU 的 yaw 通常不可靠，关闭
+      - false   # yaw
       - false   # vx
       - false   # vy
       - false   # vz
@@ -63,219 +65,215 @@ ekf_se_odom:
       - false   # az
     imu0_differential: false
     imu0_relative: false
-    imu0_remove_gravitational_acceleration: true   # 去除重力加速度
+    imu0_remove_gravitational_acceleration: true
 
-    # --- 过程噪声 (Process Noise) ---
-    # 越小 = 越信任模型预测，越大 = 越依赖测量
-    process_noise_covariance:
-      - 0.05    # x
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.05    # y
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.06    # z (small, 2D mode)
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.03    # roll (small, 2D)
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.03    # pitch (small, 2D)
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.06    # yaw (rotation noise)
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.2     # vx
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.04    # vy (small, 差速轮)
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.01    # vz (small)
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.01    # vroll (small)
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.01    # vpitch (small)
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.3     # vyaw
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.5     # ax
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.5     # ay
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.0
-      - 0.01    # az (small)
-
-    # --- 初始估计误差 (Initial Estimate Covariance) ---
+    # --- 初始估计协方差 ---
+    # 初始状态完全未知时用较大值，EKF 会快速收敛
+    # x,y,yaw 初始不确定，vx,vyaw 由 odom_raw 提供
     initial_estimate_covariance:
-      - 1e-9    # x
+      - 0.1     # x
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # y
+      - 0.1     # y
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # z
+      - 1e-6    # z (2D 模式可设很小)
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # roll
+      - 1e-6    # roll (2D 模式)
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # pitch
+      - 1e-6    # pitch (2D 模式)
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # yaw
+      - 0.05    # yaw
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 0.5     # vx
+      - 0.01    # vx
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # vy
+      - 1e-6    # vy
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # vz
+      - 1e-6    # vz
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # vroll
+      - 1e-6    # vroll
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # vpitch
+      - 1e-6    # vpitch
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 0.5     # vyaw
+      - 0.01    # vyaw
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 0.5     # ax
+      - 0.1     # ax
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 0.5     # ay
+      - 0.1     # ay
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
       - 0.0
-      - 1e-9    # az
+      - 1e-6    # az
+
+    # --- 过程噪声协方差 ---
+    process_noise_covariance:
+      - 0.01    # x
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.01    # y
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1e-6    # z (2D, irrelevant)
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1e-6    # roll
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1e-6    # pitch
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.02    # yaw
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.1     # vx
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1e-6    # vy
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1e-6    # vz
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1e-6    # vroll
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1e-6    # vpitch
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.05    # vyaw
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.3     # ax
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.3     # ay
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1e-6    # az
 
     # --- 发布配置 ---
     publish_tf: true                    # 发布 odom → base_footprint TF
     publish_acceleration: false         # 不发布加速度
     reset_on_time_jump: false
-
-    # --- 诊断 ---
-    print_diagnostics: true
-    debug: false
-    debug_out_file: /tmp/robot_localization_debug.txt
