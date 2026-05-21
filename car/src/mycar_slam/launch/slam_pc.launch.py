@@ -47,9 +47,8 @@ def generate_launch_description():
         ],
     )
 
-    # === RViz2 ===
-    rviz_config = os.path.join(pkg_dir, '..', '..', 'yahboomcar_description',
-                               'rviz', 'yahboomcar.rviz')
+    # === RViz2（使用建图专用配置：Map + LaserScan + RobotModel + TF）===
+    rviz_config = os.path.join(pkg_dir, 'config', 'slam_mapping.rviz')
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',

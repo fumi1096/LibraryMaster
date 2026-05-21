@@ -69,3 +69,10 @@ slam_toolbox:
     scan_topic: /scan
     odom_topic: /odom
     map_save_duration: 2.0
+
+    # --- QoS 覆盖（解决 pointcloud_to_laserscan Best Effort 与 slam_toolbox Reliable 不匹配） ---
+    qos_overrides:
+      /scan:
+        subscription:
+          reliability: best_effort
+          durability: volatile

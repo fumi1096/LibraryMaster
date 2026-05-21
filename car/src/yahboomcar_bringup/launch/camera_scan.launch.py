@@ -23,8 +23,8 @@ from launch_ros.actions import Node
 def generate_launch_description():
     # === 相机参数 ===
     stereo_frame_id_arg = DeclareLaunchArgument(
-        'stereo_frame_id', default_value='camera_Link',
-        description='双目点云的 TF frame_id'
+        'stereo_frame_id', default_value='base_footprint',
+        description='LaserScan 输出的 TF frame_id（base_footprint 只需 odom→base_footprint 一级动态 TF）'
     )
     pointcloud_topic_arg = DeclareLaunchArgument(
         'pointcloud_topic', default_value='/StereoNetNode/stereonet_pointcloud2',
