@@ -21,8 +21,17 @@ set -e
 SCRIPT_DIR=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" &> /dev/null && pwd)
 cd "$SCRIPT_DIR"
 
+# 指定 CycloneDDS 使用 usb0 网卡（与 RDK X5 通信）
+export CYCLONEDDS_URI=file://$SCRIPT_DIR/cyclonedds_config.xml
+
 source /opt/tros/humble/setup.bash
 source ./install/setup.bash
+
+# 修复 TROS 日志目录权限（防止节点崩溃）
+if [ ! -w /userdata/.roslog ]; then
+    sudo mkdir -p /userdata/.roslog 2>/dev/null
+    sudo chmod 777 /userdata/.roslog 2>/dev/null
+fi
 
 MODE=${1:-embedded}
 
