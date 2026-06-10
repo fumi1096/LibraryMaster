@@ -1,0 +1,84 @@
+# ============================================================================
+# slam_toolbox 在线异步建图配置 — mycar_f 差速轮小车
+# ============================================================================
+# 输入:  /scan (LaserScan, 来自双目深度→LaserScan 管线)
+#        /odom (EKF 融合里程计)
+#        TF 树 (odom→base_footprint, base_footprint→base_link, etc.)
+# 输出:  /map (OccupancyGrid)
+#
+# 运行位置: 全本地模式 (嵌入式 RDK X5)
+# 后续可迁移到 PC 端 (分布式部署)
+# ============================================================================
+
+slam_toolbox:
+  ros__parameters:
+    # --- 运行模式 ---
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+
+    # --- 地图参数 ---
+    map_name: /map
+    map_frame: map
+    map_start_pose: [0.0, 0.0, 0.0]
+    map_update_interval: 5.0          # 地图更新间隔 (s)
+    resolution: 0.05                  # 5cm/pixel
+
+    # --- 扫描匹配 ---
+    minimum_time_interval: 1.0    # 降低处理频率 (嵌入式算力有限)
+    transform_timeout: 5.0
+    tf_buffer_duration: 30.0
+    stack_size_to_use: 40000000
+    enable_interactive_mode: true
+
+    # --- 关键帧 ---
+    max_laser_range: 5.0              # 双目深度可靠范围 5m
+    minimum_travel_distance: 0.2      # 移动 20cm 创建关键帧
+    minimum_travel_heading: 0.1       # 旋转 0.1rad 创建关键帧
+    scan_buffer_size: 5           # 减少缓存
+    scan_buffer_max_scan_size: 30 # 减少每帧点数
+    link_match_minimum_response_fine: 0.1
+    link_scan_maximum_distance: 1.5
+    loop_search_maximum_distance: 3.0
+    do_loop_closing: true
+    loop_match_minimum_chain_size: 10
+    loop_match_maximum_variance_coarse: 3.0
+    loop_match_minimum_response_coarse: 0.35
+    loop_match_minimum_response_fine: 0.45
+
+    # --- 位姿图 ---
+    correlation_search_space_dimension: 0.5
+    correlation_search_space_resolution: 0.01
+    correlation_search_space_smear_deviation: 0.1
+
+    # --- 回环检测 ---
+    loop_search_space_dimension: 8.0
+    loop_search_space_resolution: 0.05
+    loop_search_space_smear_deviation: 0.03
+
+    # --- 距离/角度方差 ---
+    distance_variance_penalty: 0.5
+    angle_variance_penalty: 1.0
+    fine_search_angle_offset: 0.00349
+    coarse_search_angle_offset: 0.349
+    coarse_angle_resolution: 0.0349
+    minimum_angle_penalty: 0.9
+    minimum_distance_penalty: 0.5
+    use_response_expansion: true
+
+    # --- 话题映射 ---
+    odom_frame: odom
+    base_frame: base_footprint
+    scan_topic: /scan
+    odom_topic: /odom
+    map_save_duration: 2.0
+
+    # --- QoS 兼容 pointcloud_to_laserscan ---
+    qos_overrides:
+      /scan:
+        subscription:
+          reliability: best_effort
+          durability: volatile

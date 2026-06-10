@@ -1,0 +1,30 @@
+# ============================================================================
+# mycar_driver 驱动参数配置
+# ============================================================================
+# 车型: 四驱普通轮子 (FOURWD) — 差速驱动，无横向移动
+# 硬件: Rosmaster 主板 + MPU9250 IMU + 编码器电机
+
+driver_node:
+  ros__parameters:
+    # --- 串口通信 ---
+    serial_port: "/dev/ttyUSB0"         # 串口设备路径
+    baud_rate: 115200                    # 波特率（通常与固件匹配）
+    car_type: 1                          # 小车类型: 1=X3(四驱差速), 5=R2(阿克曼)
+
+    # --- 坐标帧 ---
+    imu_frame_id: "imu_Link"            # IMU 数据的 frame_id
+    base_frame_id: "base_link"          # 基础 frame_id
+
+    # --- 关节名称（与 URDF 匹配） ---
+    joint_names: ["fl_joint", "fr_joint", "br_joint", "bl_joint"]
+
+    # --- 速度限制 ---
+    linear_x_limit: 1.0                  # 最大线速度 (m/s)
+    angular_limit: 3.0                  # 最大角速度 (rad/s)
+    invert_vx: true                      # true=反转 vx (MCU 负=前进, ROS 正=前进)
+
+    # --- 传感器发布频率 ---
+    sensor_publish_rate: 20.0           # IMU/电量/编码器 发布频率 (Hz)
+
+    # --- 调试 ---
+    debug: false                         # 是否输出调试日志

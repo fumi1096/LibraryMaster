@@ -1,0 +1,14 @@
+# IMU Madgwick 滤波参数 — mycar_f
+# 输入: /imu/data_raw (MCU 驱动板 → Rosmaster_Lib)
+# 输出: /imu/data (四元数姿态估计)
+#
+# IMU 来源: MCU 驱动板 MPU9250
+# 注意: 相机自带 IMU 不通过 ROS2 发布，不存在冲突
+
+imu_filter_madgwick:
+  ros__parameters:
+    fixed_frame: "imu_Link"   # 与 /imu/data_raw 的 frame_id 一致
+    use_mag: false
+    publish_tf: false
+    world_frame: "enu"
+    orientation_stddev: 0.05

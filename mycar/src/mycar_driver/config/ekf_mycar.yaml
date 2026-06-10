@@ -1,0 +1,75 @@
+# ============================================================================
+# EKF 融合定位配置 — mycar_f (差速轮四驱小车)
+# ============================================================================
+# 输入融合:
+#   odom0: /odom_raw  — vx (线速度) + vyaw (角速度)
+#   imu0:  /imu/data   — vyaw (陀螺仪角速度)
+# 输出:
+#   /odom (融合里程计) + TF odom→base_footprint
+#
+# IMU 来源: MCU 驱动板 (Rosmaster_Lib → /imu/data_raw → imu_filter → /imu/data)
+# 相机 IMU 不参与融合 (hobot_stereonet 不发布 IMU 数据)
+#
+# 使用前提:
+#   - odom_node 的 pub_odom_tf 必须设为 false (EKF 替代发布 TF)
+#   - imu_filter_madgwick 已启动并发布 /imu/data
+# ============================================================================
+
+ekf_se_odom:
+  ros__parameters:
+    frequency: 30.0
+    sensor_timeout: 0.2
+    two_d_mode: true                    # 2D 模式 (z, roll, pitch 固定)
+    print_diagnostics: true
+    smooth_lagged_data: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom
+
+    # ---- 里程计输入 (/odom_raw) ----
+    # 差速模型: 只融合 vx 和 vyaw
+    odom0: /odom_raw
+    odom0_config:
+      - false   # x  (pose)      — EKF 自己积分位置
+      - false   # y  (pose)
+      - false   # z
+      - false   # roll
+      - false   # pitch
+      - false   # yaw
+      - true    # vx (velocity)  — MCU 编码器速度
+      - false   # vy             — 差速轮 vy=0
+      - false   # vz
+      - false   # vroll
+      - false   # vpitch
+      - true    # vyaw           — MCU 编码器角速度
+      - false   # ax
+      - false   # ay
+      - false   # az
+    odom0_differential: true
+    odom0_relative: false
+
+    # ---- IMU 输入 (/imu/data) ----
+    # 暂不融合 IMU，避免 odom→imu_Link TF 环路
+    # 纯里程计在慢速建图场景下精度足够
+    imu0: /imu/data
+    imu0_config:
+      - false
+      - false
+      - false
+      - false
+      - false
+      - false
+      - false
+      - false
+      - false
+      - false
+      - false
+      - false   # vyaw — 不融合
+      - false
+      - false
+      - false
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: false

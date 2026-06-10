@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="mycar_f">
+  <!-- base_footprint: 地面投影参考系，Nav2/导航必需 -->
+  <link name="base_footprint"/>
+  <joint name="base_footprint_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+  </joint>
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.021287034327229 -0.000459393616553533 0.0268665416203777"
+        rpy="0 0 0" />
+      <mass
+        value="0.794048324498282" />
+      <inertia
+        ixx="0.000500345047312004"
+        ixy="-9.71787774585254E-06"
+        ixz="-7.76743070609034E-06"
+        iyy="0.00106866210986134"
+        iyz="1.31832103465237E-07"
+        izz="0.0014266502647222" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.937254901960784 0.137254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="fl_Link">
+    <inertial>
+      <origin
+        xyz="-9.57077664343053E-09 -0.00156153692384933 7.75982818071452E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0602360435541665" />
+      <inertia
+        ixx="2.53242937942621E-05"
+        ixy="1.22610066007238E-12"
+        ixz="6.53429634770204E-09"
+        iyy="4.43444324003584E-05"
+        iyz="1.15989031559013E-11"
+        izz="2.53152024087449E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/fl_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/fl_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fl_joint"
+    type="continuous">
+    <origin
+      xyz="0.0798194347596028 0.0869188013040223 -0.0315000000000085"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="fl_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="fr_Link">
+    <inertial>
+      <origin
+        xyz="2.88510850626755E-08 0.00156153690159229 -6.92092243029241E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0602360431220676" />
+      <inertia
+        ixx="2.53280674316329E-05"
+        ixy="7.08137795150446E-11"
+        ixz="8.4782191987224E-10"
+        iyy="4.43431918315865E-05"
+        iyz="3.53046428172515E-11"
+        izz="2.53100643030645E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/fr_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/fr_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fr_joint"
+    type="continuous">
+    <origin
+      xyz="0.0798194347596027 -0.0862811986959776 -0.0315000000000083"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="fr_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="br_Link">
+    <inertial>
+      <origin
+        xyz="-6.04187070096796E-08 0.00156153689670808 4.44043245714787E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0602360431222151" />
+      <inertia
+        ixx="2.53225260329944E-05"
+        ixy="-4.24482918525899E-11"
+        ixz="8.35309615853201E-09"
+        iyy="4.43431918316024E-05"
+        iyz="-6.67772473183943E-11"
+        izz="2.53156057017221E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/br_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/br_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="br_joint"
+    type="continuous">
+    <origin
+      xyz="-0.0801805652407043 -0.0862811986962533 -0.0314999999999937"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="br_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="bl_Link">
+    <inertial>
+      <origin
+        xyz="-5.8451738949028E-08 -0.00156153690472458 -4.69702902058944E-08"
+        rpy="0 0 0" />
+      <mass
+        value="0.0602360431222136" />
+      <inertia
+        ixx="2.53232334042162E-05"
+        ixy="4.52892047873951E-11"
+        ixz="-8.02362749678216E-09"
+        iyy="4.43431918316008E-05"
+        iyz="-6.48832864821719E-11"
+        izz="2.53148983304986E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/bl_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/bl_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="bl_joint"
+    type="continuous">
+    <origin
+      xyz="-0.0801805652407041 0.0869188013037466 -0.0314999999999934"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="bl_Link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="imu_Link">
+    <inertial>
+      <origin
+        xyz="-0.000362122873642002 -0.0230500268686498 0.00768491749214834"
+        rpy="0 0 0" />
+      <mass
+        value="0.0722083122758556" />
+      <inertia
+        ixx="4.53945384646085E-05"
+        ixy="-8.74659310552189E-07"
+        ixz="3.08950355789817E-07"
+        iyy="2.05702697479786E-05"
+        iyz="4.46643442891381E-07"
+        izz="6.2963092786608E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/imu_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/imu_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="imu_joint"
+    type="fixed">
+    <origin
+      xyz="-0.0175158882827639 0.0288188013043405 0.011"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="imu_Link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="camera_Link">
+    <inertial>
+      <origin
+        xyz="-0.00148372597791281 0.0350000000000001 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.00469695869809621" />
+      <inertia
+        ixx="4.56412048936354E-06"
+        ixy="-3.22362353408096E-22"
+        ixz="2.29313560959624E-24"
+        iyy="1.4925456782321E-07"
+        iyz="1.31842691588969E-21"
+        izz="4.43679632395854E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/camera_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://mycar_f/meshes/camera_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="camera_joint"
+    type="fixed">
+    <origin
+      xyz="0.0936947862405823 -0.0316811986946451 0.0440937058350375"
+      rpy="3.14159 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="camera_Link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>
