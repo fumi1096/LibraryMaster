@@ -1,0 +1,43 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Enabled: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot_description
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Cloud (downsampled)
+      Enabled: true
+      Topic:
+        Value: /scan_cloud
+      Style: Flat Squares
+      Size (m): 0.02
+      Color Transformer: RGB8
+    - Class: rviz_default_plugins/PointCloud2
+      Name: MapCloud (3D)
+      Enabled: true
+      Topic:
+        Value: /rtabmap/cloud_map
+      Style: Flat Squares
+      Size (m): 0.03
+      Color Transformer: RGB8
+    - Class: rviz_default_plugins/Map
+      Name: GridMap (2D)
+      Enabled: true
+      Topic:
+        Value: /rtabmap/grid_map
+      Alpha: 0.7
+      Color Scheme: map
+  Global Options:
+    Fixed Frame: odom
+    Frame Rate: 10
