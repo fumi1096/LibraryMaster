@@ -30,6 +30,7 @@ setup(
             'test_motion = mycar_driver.test_motion:main',
             'keyboard_control = mycar_driver.keyboard_control:main',
             'pc_republish = mycar_driver.pointcloud_republisher:main',
+            'image_republish = mycar_driver.image_republisher:main',
         ],
     },
 )

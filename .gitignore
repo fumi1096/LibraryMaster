@@ -4,9 +4,18 @@ config.properties
 *~
 *.csv
 
+mycar/build/
+mycar/install/
+mycar/log/
+
+mycar_pc/build/
+mycar_pc/install/
+mycar_pc/log/
+
 car/src/build/
 car/src/install/
 car/src/log/
+car/
 #car/src/yahboomcar_base_node/
 #car/src/yahboomcar_bringup/
 #car/src/robot_localization/

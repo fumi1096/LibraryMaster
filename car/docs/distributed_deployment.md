@@ -6,20 +6,24 @@
 ┌── 嵌入式 (RDK X5) ─────────────────────┐      ┌── PC (笔记本) ──────────┐
 │                                         │      │                         │
 │  ┌─────────────────────────────────┐    │      │  建图阶段:               │
+│  │ Zenoh Router (zenohd)           │    │      │  ┌─────────────────┐    │
+│  │  监听: tcp/0.0.0.0:7447         │    │ WiFi │  │ slam_toolbox    │    │
+│  └─────────────────────────────────┘    │◄───►│  │ (online_async)  │    │
+│  ┌─────────────────────────────────┐    │      │  └─────────────────┘    │
 │  │ FourWD_driver (硬件驱动)        │    │      │  ┌─────────────────┐    │
-│  │  ├─ /imu                        │    │      │  │ slam_toolbox    │    │
-│  │  ├─ /joint_states               │    │      │  │ (online_async)  │    │
-│  │  └─ sub /cmd_vel → 电机控制     │    │ WiFi │  └─────────────────┘    │
-│  └─────────────────────────────────┘    │◄───►│  ┌─────────────────┐    │
-│  ┌─────────────────────────────────┐    │      │  │ RViz2           │    │
-│  │ base_node_fourwd (里程计)       │    │      │  │ (可视化建图)    │    │
-│  │  └─ /odom_raw                   │    │      │  └─────────────────┘    │
+│  │  ├─ /imu                        │    │      │  │ RViz2           │    │
+│  │  ├─ /joint_states               │    │      │  │ (可视化建图)    │    │
+│  │  └─ sub /cmd_vel → 电机控制     │    │      │  └─────────────────┘    │
 │  └─────────────────────────────────┘    │      │  ┌─────────────────┐    │
 │  ┌─────────────────────────────────┐    │      │  │ yahboom_keyboard│    │
-│  │ StereoNet (双目深度)            │    │      │  │ (键盘遥控)      │    │
-│  │  └─ /StereoNetNode/             │    │      │  └─────────────────┘    │
-│  │     stereonet_pointcloud2       │    │      │                         │
-│  └──────────────┬──────────────────┘    │      └─────────────────────────┘
+│  │ base_node_fourwd (里程计)       │    │      │  │ (键盘遥控)      │    │
+│  │  └─ /odom_raw                   │    │      │  └─────────────────┘    │
+│  └─────────────────────────────────┘    │      └─────────────────────────┘
+│  ┌─────────────────────────────────┐    │
+│  │ StereoNet (双目深度)            │    │      PC 端 ROS 节点以 client 模式
+│  │  └─ /StereoNetNode/             │    │      连接 RDK X5 的 zenohd
+│  │     stereonet_pointcloud2       │    │      (ZENOH_SESSION_CONFIG_URI)
+│  └──────────────┬──────────────────┘    │
 │                 │                       │
 │  ┌──────────────▼──────────────────┐    │
 │  │ pointcloud_to_laserscan         │    │      ┌── PC 任务 ──────────────┐
@@ -59,18 +63,68 @@
 
 ---
 
-## 2. 网络配置
+## 2. 网络配置 (Zenoh 中间件)
 
-两台机器的 `~/.bashrc` 添加：
+> **中间件已从 Fast DDS 迁移至 Zenoh (Router 模式)**。RDK X5 运行 Zenoh Router，PC 以 client 模式连接。
+
+### 2.1 前置条件: 编译 rmw_zenoh
+
+两端都需要从源码编译 `rmw_zenoh_cpp` (ROS 2 Humble 无预编译二进制包):
+
+```bash
+# === 嵌入式 & PC 都执行 ===
+mkdir -p ~/ws_rmw_zenoh/src && cd ~/ws_rmw_zenoh/src
+git clone https://github.com/ros2/rmw_zenoh.git -b humble
+cd ~/ws_rmw_zenoh
+rosdep install --from-paths src --ignore-src --rosdistro humble -y
+
+# 嵌入式: source /opt/tros/humble/setup.bash
+# PC:      source /opt/ros/humble/setup.bash
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
+### 2.2 持久化环境变量
+
+两台机器的 `~/.bashrc` 添加:
 
 ```bash
 # === 嵌入式 (RDK X5) ===
-export ROS_DOMAIN_ID=42
-# 如果 PC 的 hostname 不在 /etc/hosts，加：
-# export ROS_IP=192.168.x.x
+source ~/ws_rmw_zenoh/install/setup.bash
 
 # === PC ===
-export ROS_DOMAIN_ID=42
+source ~/ws_rmw_zenoh/install/setup.bash
+```
+
+> **注意**: 不再需要 `export ROS_DOMAIN_ID=42`，Zenoh 不使用 DDS domain。
+
+### 2.3 PC 端配置 RDK X5 的 IP
+
+编辑 `mycar_pc/config/zenoh_session_client.json5`，将 `<RDK_X5_IP>` 替换为 RDK X5 的实际 IP:
+
+```json5
+connect: {
+  endpoints: ["tcp/192.168.1.100:7447"],  // 替换为实际 IP
+},
+```
+
+或在启动 PC 脚本前通过环境变量覆盖:
+```bash
+export ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/192.168.1.100:7447"]'
+```
+
+### 2.4 通信架构
+
+```
+RDK X5 (zenohd Router)          PC (Client Session)
+┌─────────────────────┐         ┌──────────────────────┐
+│ zenohd              │         │ slam_toolbox         │
+│ listen: 0.0.0.0:7447│◄────────│ rviz2                │
+│                     │  tcp    │ keyboard_control     │
+│ ROS Nodes (peer) ──►│         │                      │
+│   driver, ekf,      │         │ 所有节点以 client    │
+│   camera, laserscan │         │ 模式通过 RDK X5 的   │
+│                     │         │ Router 互相发现       │
+└─────────────────────┘         └──────────────────────┘
 ```
 
 **验证连通性**：嵌入式启动后，PC 端执行：

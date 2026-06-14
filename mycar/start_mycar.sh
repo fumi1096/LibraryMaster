@@ -27,9 +27,29 @@ SCRIPT_DIR=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" &> /dev/null &
 cd "$SCRIPT_DIR"
 
 # ============================================
-# 环境设置
+# 环境设置 (必须先 source ROS 才能使用 ros2 命令)
 # ============================================
 source /opt/tros/humble/setup.bash
+
+# 清理 ROS daemon (避免残留)
+pkill -9 -f ros 2>/dev/null || true
+ros2 daemon stop 2>/dev/null || true
+
+# ============================================
+# 网络配置 (ROS 2 默认 DDS 通信)
+# ============================================
+# 域 ID: 与 PC 端保持一致 (42)
+export ROS_DOMAIN_ID=42
+
+# Fast-DDS 配置: 禁用共享内存 (跨机器/VPN 必须走 UDP)
+export FASTRTPS_DEFAULT_PROFILES_FILE="$SCRIPT_DIR/config/fastdds.xml"
+
+echo "🌐 ROS_DOMAIN_ID=$ROS_DOMAIN_ID"
+echo "🌐 Fast-DDS config: $FASTRTPS_DEFAULT_PROFILES_FILE"
+
+# ============================================
+# 加载 mycar 工作空间
+# ============================================
 source ./install/setup.bash
 
 # 日志目录权限 (防止 TROS 日志写入失败)
@@ -158,15 +178,12 @@ case "$MODE" in
     mapping_distributed)
         banner "mycar — 分布式 2D 建图 (小车端)"
         log "节点: 驱动 + 里程计 + IMU滤波 + EKF + 双目相机 + LaserScan"
-        log "SLAM (slam_toolbox) + RViz2 请在 PC 端启动"
+        log "所有数据处理 + 遥控 + 可视化均在 PC 端"
         log "串口: $SERIAL"
         log ""
         log "============================================"
         log "  PC 端操作:"
         log "    cd mycar_pc && ./start_pc.sh mapping2d"
-        log ""
-        log "  键盘遥控: i 前进, , 后退, j/l 转向"
-        log "  保存地图 (PC端): ros2 run nav2_map_server map_saver_cli -f ~/mycar_map"
         log "============================================"
         log ""
 
@@ -176,22 +193,24 @@ case "$MODE" in
             use_camera:=true \
             use_rviz:=false &
         EMBEDDED_PID=$!
-        sleep 5
 
-        ros2 run mycar_driver keyboard_control
-
-        kill $EMBEDDED_PID 2>/dev/null
-        wait $EMBEDDED_PID 2>/dev/null
+        log "小车端已启动，按 Ctrl+C 停止"
+        wait $EMBEDDED_PID
         ;;
 
     mapping3d_distributed)
-        banner "mycar — 分布式 3D 建图 (小车端)"
-        log "节点: 驱动 + 里程计 + IMU滤波 + EKF + 双目相机 + LaserScan + 体素滤波"
-        log "RTAB-Map + RViz2 请在 PC 端启动"
+        banner "mycar — 分布式 3D 建图 (小车端, RGB-D 模式)"
+        log "节点: 驱动 + 里程计 + IMU滤波 + EKF + 双目相机 + LaserScan"
+        log "图像修正 (image_republisher): 时间戳 + 编码转换 → PC 端 RTAB-Map RGB-D"
+        log "点云直接透传 → PC 端 (ICP 备用)"
         log "串口: $SERIAL"
         log ""
+        log "============================================"
+        log "  PC 端操作:"
+        log "    cd mycar_pc && ./start_pc.sh mapping3d_rgbd"
+        log "============================================"
+        log ""
 
-        log "嵌入式核心后台启动..."
         ros2 launch mycar_driver bringup.launch.py \
             serial_port:="$SERIAL" \
             use_ekf:=true \
@@ -200,25 +219,13 @@ case "$MODE" in
         EMBEDDED_PID=$!
         sleep 5
 
-        log "启动体素下采样 (减少网络带宽)..."
-        ros2 run mycar_rtabmap voxel_filter &
-        VOXEL_PID=$!
-        sleep 2
+        log "启动图像修正节点 (时间戳 + 编码转换)..."
+        ros2 launch mycar_driver image_republish.launch.py &
+        IMAGE_PID=$!
 
-        log ""
-        log "============================================"
-        log "  PC 端操作:"
-        log "    cd mycar_pc && ./start_pc.sh mapping3d"
-        log ""
-        log "  键盘遥控: i 前进, , 后退, j/l 转向"
-        log "============================================"
-        log ""
-
-        ros2 run mycar_driver keyboard_control
-
-        kill $VOXEL_PID 2>/dev/null
-        kill $EMBEDDED_PID 2>/dev/null
-        wait $EMBEDDED_PID 2>/dev/null
+        log "小车端已启动，按 Ctrl+C 停止"
+        wait $EMBEDDED_PID
+        kill $IMAGE_PID 2>/dev/null
         ;;
 
     *)

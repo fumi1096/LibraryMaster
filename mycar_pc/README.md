@@ -1,123 +1,117 @@
-# mycar_pc — PC 端分布式部署工作空间
+# mycar_pc — PC 端 RGB-D 3D 建图工作空间
 
-## 概述
+## 项目概述
 
-`mycar_pc` 是 mycar 小车系统的 **PC 端工作空间**，负责运行计算密集型节点和可视化：
+基于 RTAB-Map RGB-D 的 3D 视觉建图系统（PC 端），小车端通过 VPN 发布修正后的图像话题，PC 端消费数据完成建图。
 
-- **2D 建图**：`slam_toolbox` (在线异步) + RViz2
-- **3D 建图**：`RTAB-Map` (scan-to-scan ICP) + RViz2
+**硬件要求**: x86 PC + NVIDIA GPU (推荐, RTAB-Map 特征提取)
+**软件栈**: ROS2 Humble + Fast-DDS + RTAB-Map
 
-所有硬件相关节点（驱动、IMU、EKF、相机、体素滤波）运行在小车端 (`mycar/`)。
+### 技术栈
 
-## 分布式通信
+| 层级 | 技术 | 说明 |
+|------|------|------|
+| 系统 | ROS2 Humble (Ubuntu 22.04) | 标准 ROS2 发行版 |
+| 通信 | Fast-DDS Simple Discovery | `ROS_DOMAIN_ID=42`, UDP 组播 |
+| 网络 | OpenVPN | 跨机器 DDS 流量透传 |
+| SLAM | RTAB-Map (rtabmap_slam) | RGB-D 模式: ORB视觉特征 + 词袋回环 + ICP |
+| 可视化 | RViz2 | 预配置: MapCloud + MapGraph + Grid + RobotModel |
 
-使用 **Fast DDS Discovery Server** 作为 ROS2 分布式发现协议：
+### 架构
 
-```bash
-# 1. 在 PC 或小车上启动发现服务器
-fastdds discovery --server-id 0
-
-# 2. 所有节点配置连接（PC 和小车都需设置）
-export ROS_DISCOVERY_SERVER=<服务器ip>:11811
+```
+[mycar — 小车端 RDK X5]                    [mycar_pc — PC 端]
+                                      
+image_republisher (小车端)                mycar_rtabmap
+  ├─ /rgb_fixed (bgr8, epoch)  ─────────→ rgb/image
+  ├─ /depth_fixed (16UC1, epoch) ───────→ depth/image
+  └─ /rgb_camera_info_fixed ────────────→ rgb/camera_info
+                                           depth/camera_info
+EKF (小车端)                              
+  └─ /odom ──────────────────────────────→ odom
+                                      
+                                        robot_state_publisher (mycar_f)
+                                          └─ TF: camera_Link → base_footprint
+                                      
+                                        RTAB-Map RGB-D
+                                          ├── ORB 视觉特征提取
+                                          ├── 深度→3D 投影
+                                          ├── 词袋回环检测
+                                          └── ICP 位姿优化
+                                              ↓
+                                          /rtabmap/cloud_map
+                                          /rtabmap/grid_map
+                                          /rtabmap/mapGraph
+                                        keyboard_control → /cmd_vel
+                                        RViz2 可视化
 ```
 
-## 目录结构
+### 包结构
+
+| 包 | 类型 | 职责 |
+|----|------|------|
+| `mycar_rtabmap` | Python | RTAB-Map RGB-D launch + config + keyboard_control |
+| `mycar_f` | CMake | URDF 模型副本 (robot_state_publisher TF 用) |
+
+### 目录结构
 
 ```
 mycar_pc/
+├── build.sh                          # colcon 构建
+├── start_pc.sh                       # 启动入口 (mapping3d_rgbd)
 ├── README.md
-├── build.sh                    # colcon 构建
-├── start_pc.sh                 # PC 端启动脚本
+├── config/
+│   └── fastdds.xml                   # Fast-DDS (禁用 SHM)
 └── src/
-    ├── mycar_slam/             # 2D SLAM (slam_toolbox 配置 + launch)
-    ├── mycar_rtabmap/          # 3D SLAM (RTAB-Map 配置 + launch, 不含体素滤波)
-    └── mycar_f/                # URDF 小车模型 (RViz RobotModel 显示用)
+    ├── mycar_rtabmap/
+    │   ├── launch/
+    │   │   └── rtabmap_rgbd_pc.launch.py
+    │   ├── config/
+    │   │   ├── rtabmap_rgbd.yaml
+    │   │   └── rtabmap_mapping.rviz
+    │   └── mycar_rtabmap/
+    │       └── keyboard_control.py
+    └── mycar_f/
+        └── urdf/mycar_f.urdf
 ```
 
-## 使用方法
+### 话题对接
 
-### 1. 构建
+| RTAB-Map 订阅 | 小车端话题 | 原始话题 | 类型 |
+|--------------|-----------|---------|------|
+| `rgb/image` | `/image_republisher/rgb_fixed` | `/StereoNetNode/rectify_left_image` | `Image(bgr8)` |
+| `rgb/camera_info` | `/image_republisher/rgb_camera_info_fixed` | camera_info | `CameraInfo` |
+| `depth/image` | `/image_republisher/depth_fixed` | `/StereoNetNode/stereonet_depth` | `Image(16UC1, mm)` |
+| `depth/camera_info` | `/image_republisher/rgb_camera_info_fixed` | (共用RGB内参) | `CameraInfo` |
+| `odom` | `/odom` | EKF 融合里程计 | `Odometry` |
+
+### 快速启动
 
 ```bash
-cd mycar_pc
+# 1. 构建
 ./build.sh
+
+# 2. 确保小车端已启动
+cd ../mycar && ./start_mycar.sh mapping3d_distributed
+
+# 3. 启动 PC 端
+./start_pc.sh mapping3d_rgbd
+# 键盘遥控: i 前进, , 后退, j/l 转向, k 停止
+# Ctrl+C 停止, 数据库自动保存
 ```
 
-### 2. 启动发现服务器
+### 查看结果
 
 ```bash
-fastdds discovery --server-id 0
-```
+# 3D 点云地图
+rtabmap-databaseViewer ~/.ros/rtabmap.db
 
-### 3. 配置发现服务器地址
-
-```bash
-# 替换为实际 IP
-export ROS_DISCOVERY_SERVER=<服务器ip>:11811
-```
-
-### 4. 启动小车端
-
-在小车上：
-
-```bash
-# 2D 建图
-./start_mycar.sh mapping_distributed
-
-# 3D 建图
-./start_mycar.sh mapping3d_distributed
-```
-
-### 5. 启动 PC 端
-
-```bash
-# 2D 建图
-./start_pc.sh mapping2d
-
-# 3D 建图
-./start_pc.sh mapping3d
-```
-
-## 数据流
-
-```
-[小车端 RDK X5]                          [PC 端]
-=================                        =========
-
-MCU 驱动板
-  ├→ /imu/data_raw, /vel_raw
-  ├→ odom_node → /odom_raw
-  └→ motion_controller ← /cmd_vel
-
-EKF ← /odom_raw + /imu/data
-  └→ /odom + TF (odom→base_footprint)
-
-双目相机 (hobot_stereonet)
-  ├→ 点云 (原始)
-  ├→ pointcloud_to_laserscan → /scan ────→ slam_toolbox → /map
-  └→ voxel_filter → /scan_cloud ────────→ RTAB-Map → 3D 地图
-
-                                         RViz2 (可视化)
-```
-
-## 依赖
-
-PC 端需要安装以下 ROS2 包：
-
-```bash
-sudo apt install ros-humble-slam-toolbox
-sudo apt install ros-humble-rtabmap-ros
-sudo apt install ros-humble-nav2-map-server
-sudo apt install ros-humble-robot-localization
-sudo apt install ros-humble-pointcloud-to-laserscan
-```
-
-## 保存建图结果
-
-```bash
-# 2D 地图
+# 导出 2D 栅格地图 (Nav2 导航)
 ros2 run nav2_map_server map_saver_cli -f ~/mycar_map
+```
 
-# 3D 数据库
-ros2 service call /rtabmap/save_database rtabmap_msgs/srv/SaveDatabase
+### 依赖
+
+```bash
+sudo apt install ros-humble-rtabmap-slam
 ```

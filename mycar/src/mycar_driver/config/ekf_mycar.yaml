@@ -51,25 +51,25 @@ ekf_se_odom:
     odom0_relative: false
 
     # ---- IMU 输入 (/imu/data) ----
-    # 暂不融合 IMU，避免 odom→imu_Link TF 环路
-    # 纯里程计在慢速建图场景下精度足够
+    # frame_id=imu_Link, EKF 自动通过 TF2 查询 imu_Link→base_footprint 静态变换
+    # 角速度在刚体上处处相同，IMU 安装位置偏移不影响 vyaw 融合
     imu0: /imu/data
     imu0_config:
-      - false
-      - false
-      - false
-      - false
-      - false
-      - false
-      - false
-      - false
-      - false
-      - false
-      - false
-      - false   # vyaw — 不融合
-      - false
-      - false
-      - false
+      - false   # x
+      - false   # y
+      - false   # z
+      - false   # roll
+      - false   # pitch
+      - false   # yaw
+      - false   # vx
+      - false   # vy
+      - false   # vz
+      - false   # vroll
+      - false   # vpitch
+      - true    # vyaw — 融合陀螺仪角速度 (补充编码器角速度)
+      - false   # ax
+      - false   # ay
+      - false   # az
     imu0_differential: false
-    imu0_relative: false
+    imu0_relative: false                # EKF 查 TF 做 imu_Link→base_footprint 变换
     imu0_remove_gravitational_acceleration: false

@@ -1,0 +1,43 @@
+// ============================================================================
+// Zenoh Router 配置 — RDK X5 端
+// 用途: 在 RDK X5 上运行 zenohd 路由器，接受 PC 端 client 连接
+// 使用: export ZENOH_ROUTER_CONFIG_URI=$(pwd)/config/zenoh_router.json5
+//       ros2 run rmw_zenoh_cpp rmw_zenohd
+// ============================================================================
+{
+  mode: "router",
+
+  // 监听地址: IPv4 ANY，端口 7447
+  // 注意: RDK X5 通常无 IPv6，必须用 0.0.0.0 而非 [::]
+  listen: {
+    endpoints: ["tcp/0.0.0.0:7447"],
+  },
+
+  // 跨主机发现: 启用 gossip 让 PC 端 client 能通过路由器互相发现
+  scouting: {
+    gossip: {
+      enabled: true,
+    },
+  },
+
+  // 传输参数优化 (适用于嵌入式设备)
+  transport: {
+    unicast: {
+      // 大量节点同时启动时的超时容忍
+      open_timeout: 60000,
+      accept_timeout: 60000,
+      accept_pending: 10000,
+      max_sessions: 10000,
+    },
+    link: {
+      tx: {
+        // 租约: 60 秒，避免 WiFi 不稳定时误断
+        lease: 60000,
+      },
+    },
+    // 共享内存: RDK X5 资源受限，默认关闭
+    shared_memory: {
+      enabled: false,
+    },
+  },
+}

@@ -2,8 +2,11 @@
 """
 voxel_filter.py — 点云体素下采样
 
-将 hobot_stereonet 的高密度点云（~224K 点）下采样到约 5K 点，
+将 hobot_stereonet 的高密度点云（~224K 点）下采样到约 8K 点，
 大幅降低 RTAB-Map 的计算压力。
+
+输入:  /StereoNetNode/stereonet_pointcloud2 (原始点云)
+输出:  /scan_cloud (下采样后)
 
 用法:
   ros2 run mycar_rtabmap voxel_filter
@@ -25,7 +28,7 @@ class VoxelFilter(Node):
         self._pub = self.create_publisher(PointCloud2, '/scan_cloud', 10)
         self._sub = self.create_subscription(
             PointCloud2,
-            '/pointcloud_republisher/pointcloud_fixed',  # 使用时间戳修正后的点云
+            '/StereoNetNode/stereonet_pointcloud2',  # StereoNet 原始点云
             self._callback, 10)
 
         self.get_logger().info(f'VoxelGrid filter: {self._voxel}m, min={self._min}pts')
@@ -71,10 +74,10 @@ class VoxelFilter(Node):
         return pts[valid]
 
     def _numpy_to_ros(self, pts: np.ndarray, header) -> PointCloud2:
-        """Nx3 numpy → PointCloud2 (XYZ only)"""
+        """Nx3 numpy → PointCloud2 (XYZ only, 保留输入 frame_id)"""
         msg = PointCloud2()
         msg.header.stamp = header.stamp
-        msg.header.frame_id = 'base_footprint'
+        msg.header.frame_id = header.frame_id  # 保留原始坐标系 (camera_Link)
         msg.height = 1
         msg.width = len(pts)
         msg.fields = [

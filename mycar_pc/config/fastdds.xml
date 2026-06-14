@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+    <!--
+    ============================================================================
+    Fast-DDS 配置 — PC 端
+    用途: ROS 2 默认中间件跨机器通信 (VPN)
+    
+    使用: export FASTRTPS_DEFAULT_PROFILES_FILE=$(pwd)/config/fastdds.xml
+          export ROS_DOMAIN_ID=42
+    
+    关键:
+      - 禁用 SHM (共享内存): 跨机器/VPN 通信不支持 SHM，必须走 UDP
+      - 异步发布: PC 端性能充足，仍用异步避免阻塞
+      - 默认 Simple Discovery (组播): 依赖 VPN 转发组播或同子网
+    ============================================================================
+    -->
+
+    <!-- 默认发布者: 禁用 SHM，异步模式 -->
+    <data_writer profile_name="default publisher profile" is_default_profile="true">
+        <qos>
+            <publishMode>
+                <kind>ASYNCHRONOUS</kind>
+            </publishMode>
+            <data_sharing>
+                <kind>OFF</kind>
+            </data_sharing>
+        </qos>
+        <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    </data_writer>
+
+    <!-- 默认订阅者: 禁用 SHM -->
+    <data_reader profile_name="default subscription profile" is_default_profile="true">
+        <qos>
+            <data_sharing>
+                <kind>OFF</kind>
+            </data_sharing>
+        </qos>
+        <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    </data_reader>
+</profiles>

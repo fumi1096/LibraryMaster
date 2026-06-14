@@ -16,13 +16,13 @@ Visualization Manager:
       Description Topic:
         Value: /robot_description
     - Class: rviz_default_plugins/PointCloud2
-      Name: Cloud (downsampled)
+      Name: Cloud (raw)
       Enabled: true
       Topic:
-        Value: /scan_cloud
+        Value: /pointcloud_republisher/pointcloud_fixed
       Style: Flat Squares
       Size (m): 0.02
-      Color Transformer: RGB8
+      Color Transformer: Intensity
     - Class: rviz_default_plugins/PointCloud2
       Name: MapCloud (3D)
       Enabled: true

@@ -1,0 +1,68 @@
+# RTAB-Map RGB-D 模式配置 — 视觉特征 + ICP + Odom 辅助
+#
+# 输入:
+#   rgb/image        ← /StereoNetNode/rectify_left_image (bgr8)
+#   rgb/camera_info  ← /StereoNetNode/rectify_left_image/camera_info
+#   depth/image      ← /StereoNetNode/stereonet_depth (16UC1, mm)
+#   odom             ← /odom (EKF 融合里程计)
+#
+# 输出:
+#   /rtabmap/cloud_map, /rtabmap/grid_map, /rtabmap/mapGraph
+#   TF: map → odom
+#
+# 参考: https://d-robotics.github.io/rdk_doc/Robot_development/boxs/spatial/hobot_stereonet/
+
+rtabmap:
+  ros__parameters:
+    # ---- 坐标帧 ----
+    frame_id: "base_footprint"
+    odom_frame_id: "odom"
+
+    # ---- 订阅: RGB图像 + 深度图 + 里程计 ----
+    subscribe_rgb: true
+    subscribe_depth: true
+    subscribe_odom: true
+    subscribe_scan_cloud: false
+    subscribe_scan: false
+    subscribe_odom_info: false
+
+    # ---- RGB-D 时间同步 (博客参数) ----
+    approx_sync: true
+    approx_sync_max_interval: 0.1
+    odom_sensor_sync: true
+
+    # ---- 视觉特征 (博客参数, 对齐 RTAB-Map 默认) ----
+    Rtabmap/DetectionRate: "2"          # Hz, 特征检测频率
+    Vis/MinInliers: "10"                # 回环最小内点数
+    Kp/MaxFeatures: "1000"             # 每帧最大特征点数
+    Mem/UseOdomFeatures: "true"        # 从 odom 提取视觉特征
+
+    # ---- 栅格地图 (博客 Grid/CellSize: 0.05) ----
+    Grid/CellSize: "0.05"              # 栅格分辨率 5cm
+    Grid/Sensor: "0"                   # 从深度图直接投影
+
+    # ---- TF ----
+    publish_tf: true                   # 发布 map → odom
+    wait_for_transform: 15.0           # 等待 TF (秒), 给 EKF 启动留余量
+    tf_tolerance: 15.0                 # TF 时间容差
+
+    # ---- 深度图传输 ----
+    depth_image_transport: "raw"
+
+    # ---- 建图策略 (地面差速小车) ----
+    Reg/Force3DoF: "true"             # 3DoF (x, y, yaw), 地面小车
+    Reg/Strategy: "0"                 # 0=默认(视觉+ICP), 1=纯ICP
+
+    # ---- 新节点创建条件 ----
+    RGBD/ProximityBySpace: "true"     # 空间距离触发新节点
+    RGBD/LinearUpdate: "0.2"          # 每 20cm 建新节点
+    RGBD/AngularUpdate: "0.2"         # 每 0.2rad(~11°) 建新节点
+
+    # ---- 栅格地图 ----
+    Grid/FromDepth: "true"            # 从深度图投影栅格
+    Grid/RangeMin: "0.3"             # 最小深度 30cm
+    Grid/RangeMax: "5.0"             # 最大深度 5m
+    Grid/FootprintHeight: "0.1"      # 地面以上 10cm 算占据
+    map_filter_radius: 0.0
+    map_filter_angle: 0.0
+    map_always_update: true           # 强制每帧更新地图

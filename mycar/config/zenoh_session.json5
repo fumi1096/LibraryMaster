@@ -1,0 +1,46 @@
+// ============================================================================
+// Zenoh Session 配置 — RDK X5 本机 ROS 节点
+// 用途: RDK X5 上的 ROS 节点以 peer 模式连接本地 zenohd 路由器
+// 使用: export ZENOH_SESSION_CONFIG_URI=$(pwd)/config/zenoh_session.json5
+// ============================================================================
+{
+  // peer 模式: 连接到本机 zenohd 路由器
+  mode: "peer",
+
+  connect: {
+    endpoints: ["tcp/localhost:7447"],
+  },
+
+  // 只监听本地回环 (所有跨主机通信由 Router 转发)
+  listen: {
+    endpoints: ["tcp/localhost:0"],
+  },
+
+  // Router 检测: 1 次尝试, 失败不阻塞 (假设 zenohd 已启动)
+  // 可通过 ZENOH_ROUTER_CHECK_ATTEMPTS 覆盖
+
+  // Gossip: peer 只向 router 发送，减少节点间冗余流量
+  scouting: {
+    gossip: {
+      enabled: true,
+      target: { peer: ["router"] },
+    },
+  },
+
+  // 传输参数优化
+  transport: {
+    unicast: {
+      open_timeout: 60000,
+      accept_timeout: 60000,
+    },
+    link: {
+      tx: {
+        lease: 60000,
+        keep_alive: 2,
+      },
+    },
+    shared_memory: {
+      enabled: false,
+    },
+  },
+}

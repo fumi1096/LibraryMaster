@@ -1,20 +1,14 @@
 #!/bin/bash
 # ============================================================================
-# mycar_pc PC 端启动脚本 (v1.0)
-# 分布式部署 — 负责计算密集型节点 + 可视化
+# mycar_pc PC 端启动脚本 (v3.0 — RGB-D 3D 建图)
+# 分布式部署 — RTAB-Map RGB-D 视觉建图 + RViz2 可视化
 #
 # 前提:
-#   - Fast DDS Discovery Server 已启动
-#   - 小车端已启动 mapping_distributed / mapping3d_distributed
-#   - 网络互通 (ROS_DISCOVERY_SERVER 已配置)
-#
-# 模式:
-#   mapping2d — 2D 建图 (slam_toolbox + RViz2)
-#   mapping3d — 3D 建图 (RTAB-Map + RViz2)
+#   - 小车端已启动 mapping3d_distributed (含 image_republisher)
+#   - 网络互通 (VPN, ROS_DOMAIN_ID=42)
 #
 # 用法:
-#   ./start_pc.sh mapping2d
-#   ./start_pc.sh mapping3d
+#   ./start_pc.sh mapping3d_rgbd
 # ============================================================================
 
 set -e
@@ -25,7 +19,6 @@ cd "$SCRIPT_DIR"
 # ============================================
 # 环境设置
 # ============================================
-# PC 端使用标准 ROS2 Humble
 if [ -f /opt/ros/humble/setup.bash ]; then
     source /opt/ros/humble/setup.bash
 elif [ -f /opt/tros/humble/setup.bash ]; then
@@ -40,7 +33,20 @@ source ./install/setup.bash 2>/dev/null || {
     exit 1
 }
 
-MODE=${1:-mapping2d}
+# ============================================
+# 中间件配置
+# ============================================
+pkill -9 -f ros 2>/dev/null || true
+ros2 daemon stop 2>/dev/null || true
+
+export ROS_DOMAIN_ID=42
+export FASTRTPS_DEFAULT_PROFILES_FILE="$SCRIPT_DIR/config/fastdds.xml"
+
+echo "🌐 ROS_DOMAIN_ID=$ROS_DOMAIN_ID"
+echo "🌐 Fast-DDS config: $FASTRTPS_DEFAULT_PROFILES_FILE"
+echo "🔄 使用 ROS 2 默认中间件 (Fast DDS)"
+
+MODE=${1:-mapping3d_rgbd}
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 banner() {
@@ -52,67 +58,64 @@ banner() {
 }
 
 # ============================================
+# 依赖检查
+# ============================================
+FAIL=0
+ros2 pkg prefix rtabmap_slam &>/dev/null || {
+    echo "❌ 缺少 ROS2 包: rtabmap_slam"
+    echo "   安装: sudo apt install ros-humble-rtabmap-slam"
+    FAIL=1
+}
+[ "$FAIL" -eq 1 ] && { echo ""; echo "请先安装缺失的依赖包再重试。"; exit 1; }
+
+# ============================================
 # 启动
 # ============================================
 case "$MODE" in
-    mapping2d)
-        banner "PC 端 — 2D 建图 (slam_toolbox)"
-        log "等待小车端话题: /scan, /odom, TF..."
-        log ""
+    mapping3d_rgbd)
+        banner "PC 端 — RTAB-Map RGB-D 3D 建图"
 
-        # 验证话题
-        log "检查 /scan 话题..."
-        for i in $(seq 1 15); do
-            if ros2 topic list 2>/dev/null | grep -q "/scan"; then
-                log "✅ /scan 已检测到"
-                break
-            fi
-            sleep 1
-        done
+        # 清理旧数据库，从原点开始
+        rm -f ~/.ros/rtabmap.db
 
-        log "启动 slam_toolbox + RViz2..."
-        ros2 launch mycar_slam slam.launch.py
+        log "启动 RTAB-Map RGB-D + RViz2..."
+        ros2 launch mycar_rtabmap rtabmap_rgbd_pc.launch.py &
+        RTAB_PID=$!
+        sleep 5
 
-        log ""
-        log "建图完成。保存地图:"
-        log "  ros2 run nav2_map_server map_saver_cli -f ~/mycar_map"
-        ;;
+        log "启动键盘遥控 (i 前进, , 后退, j/l 转向, k 停止)..."
+        ros2 run mycar_rtabmap keyboard_control
 
-    mapping3d)
-        banner "PC 端 — 3D 建图 (RTAB-Map)"
-        log "等待小车端话题: /scan_cloud, /odom, TF..."
-        log ""
-
-        # 验证体素滤波后的点云
-        log "检查 /scan_cloud 话题..."
-        for i in $(seq 1 15); do
-            if ros2 topic list 2>/dev/null | grep -q "/scan_cloud"; then
-                log "✅ /scan_cloud 已检测到"
-                break
-            fi
-            sleep 1
-        done
-
-        log "启动 RTAB-Map + RViz2..."
-        ros2 launch mycar_rtabmap rtabmap_mapping_pc.launch.py
+        kill $RTAB_PID 2>/dev/null
+        wait $RTAB_PID 2>/dev/null
 
         log ""
-        log "3D 建图完成。保存数据库:"
-        log "  ros2 service call /rtabmap/save_database rtabmap_msgs/srv/SaveDatabase"
+        log "============================================"
+        log "  3D RGB-D 建图完成！"
+        log ""
+        log "  数据库: ~/.ros/rtabmap.db"
+        log ""
+        log "  查看 3D 地图:"
+        log "    rtabmap-databaseViewer ~/.ros/rtabmap.db"
+        log ""
+        log "  导出 2D 栅格地图 (Nav2 导航用):"
+        log "    ros2 run nav2_map_server map_saver_cli -f ~/mycar_map"
+        log "============================================"
         ;;
 
     *)
-        echo "用法: $0 [mapping2d|mapping3d]"
+        echo "用法: $0 mapping3d_rgbd"
         echo ""
-        echo "  mapping2d  — 2D 建图 (slam_toolbox + RViz2)"
-        echo "  mapping3d  — 3D 建图 (RTAB-Map + RViz2)"
+        echo "  mapping3d_rgbd — RTAB-Map RGB-D 3D 建图"
+        echo "                    (ORB视觉特征 + 深度投影 + 词袋回环)"
+        echo ""
+        echo "键盘遥控: i 前进, , 后退, j/l 转向, k 停止"
         echo ""
         echo "前提:"
-        echo "  1. Fast DDS Discovery Server 已启动"
-        echo "  2. 小车端已启动:"
-        echo "     ./start_mycar.sh mapping_distributed      (2D)"
-        echo "     ./start_mycar.sh mapping3d_distributed    (3D)"
-        echo "  3. 两端均已配置 ROS_DISCOVERY_SERVER"
+        echo "  1. 两端 ROS_DOMAIN_ID 一致 (当前: 42)"
+        echo "  2. 网络互通 (VPN 已连接)"
+        echo "  3. 小车端已启动:"
+        echo "     ./start_mycar.sh mapping3d_distributed"
         exit 1
         ;;
 esac

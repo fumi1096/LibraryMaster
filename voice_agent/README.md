@@ -24,6 +24,8 @@
 
 ## 快速开始
 
+### 方式一：本地运行
+
 ```bash
 # 1. 安装依赖
 pip install -r requirements.txt
@@ -37,6 +39,25 @@ export DEEPSEEK_API_KEY='sk-xxxxxxxx'
 # 4. 启动智能助手
 python3 main.py --rag-url http://<远程IP>:9014/rag
 ```
+
+### 方式二：Docker 容器运行
+
+```bash
+# 1. 从模板创建 .env 文件，填入 DeepSeek API Key
+cp .env.example .env
+# 编辑 .env，修改 DEEPSEEK_API_KEY 和 RAG_BASE_URL
+
+# 2. 构建并启动
+docker compose up -d --build
+
+# 3. 进入交互式终端
+docker attach voice-agent
+
+# 4. 退出容器 (Ctrl+P, Ctrl+Q 保持运行; Ctrl+C 停止)
+docker compose down
+```
+
+> **注意**：若 RAG 服务在宿主机上，`RAG_BASE_URL` 使用 `http://host.docker.internal:9014/rag` 即可。若在另一台机器上，改为实际 IP。
 
 ## 命令行参数
 
@@ -92,13 +113,17 @@ $ python3 main.py --rag-url http://192.168.1.100:9014/rag
 
 ```
 voice_agent/
-├── main.py          # CLI 入口，支持 --rag-url / --no-stream 参数
-├── agent.py         # Agent 主循环：ReAct 风格的对话 + 工具调用编排
-├── llm.py           # DeepSeek LLM 封装：流式生成 + 回调接口 (TTS预留)
-├── tools.py         # Function Calling 工具：search_books / get_library_info
-├── config.py        # 配置管理：API Key、RAG 地址、系统提示词
-├── requirements.txt # Python 依赖
-└── README.md        # 本文件
+├── main.py            # CLI 入口，支持 --rag-url / --no-stream 参数
+├── agent.py           # Agent 主循环：ReAct 风格的对话 + 工具调用编排
+├── llm.py             # DeepSeek LLM 封装：流式生成 + 回调接口 (TTS预留)
+├── tools.py           # Function Calling 工具：search_books / get_library_info
+├── config.py          # 配置管理：API Key、RAG 地址、系统提示词
+├── requirements.txt   # Python 依赖
+├── Dockerfile         # Docker 镜像构建
+├── docker-compose.yml # Docker 编排
+├── .env.example       # 环境变量模板
+├── .gitignore         # Git 忽略规则
+└── README.md          # 本文件
 ```
 
 ## TTS 扩展

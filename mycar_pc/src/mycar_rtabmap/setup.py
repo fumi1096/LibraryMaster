@@ -26,8 +26,7 @@ setup(
     license='BSD',
     entry_points={
         'console_scripts': [
-            'voxel_filter = mycar_rtabmap.voxel_filter:main',
-            'pointcloud_mapper = mycar_rtabmap.pointcloud_mapper:main',
+            'keyboard_control = mycar_rtabmap.keyboard_control:main',
         ],
     },
 )

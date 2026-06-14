@@ -41,11 +41,11 @@ ekf_se_odom:
       - false   # ax
       - false   # ay
       - false   # az
-    odom0_differential: false
+    odom0_differential: true
     odom0_relative: false
 
     # --- 融合输入：IMU (/imu/data) ---
-    # 只使用角速度 vyaw 和线加速度 ax/ay，yaw 由 gyro 积分
+    # 只融合角速度 vyaw（不融合加速度，避免重力去除导致的 NaN）
     imu0: /imu/data
     imu0_config:
       - false   # x
@@ -60,12 +60,12 @@ ekf_se_odom:
       - false   # vroll
       - false   # vpitch
       - true    # vyaw           ← 角速度 (gyro)
-      - true    # ax             ← 线加速度
-      - true    # ay
+      - false   # ax             ← 不融合加速度
+      - false   # ay
       - false   # az
     imu0_differential: false
     imu0_relative: false
-    imu0_remove_gravitational_acceleration: true
+    imu0_remove_gravitational_acceleration: false
 
     # --- 初始估计协方差 ---
     # 初始状态完全未知时用较大值，EKF 会快速收敛

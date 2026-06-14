@@ -31,6 +31,18 @@ def generate_launch_description():
         'stereonet_frame_id', default_value='camera_Link',
         description='点云发布时的 frame_id (与 URDF camera_Link 一致)')
 
+    publish_rectify_bgr_arg = DeclareLaunchArgument(
+        'publish_rectify_bgr', default_value='True',
+        description='发布 bgr8 矫正左图 (RTAB-Map RGB-D 模式需要)')
+
+    publish_origin_enable_arg = DeclareLaunchArgument(
+        'publish_origin_enable', default_value='False',
+        description='发布原始图像 (调试用，默认关闭节省带宽)')
+
+    publish_visual_enabled_arg = DeclareLaunchArgument(
+        'publish_visual_enabled', default_value='False',
+        description='发布可视化渲染图 (调试用，默认关闭)')
+
     # === hobot_stereonet 双目深度节点 ===
     # 复用 TROS 官方 launch 文件，只覆盖关键参数
     stereonet_launch = IncludeLaunchDescription(
@@ -55,11 +67,17 @@ def generate_launch_description():
             'pointcloud_height_max': '5.0',
             'pointcloud_depth_max': '5.0',
             'infer_thread_num': '2',
+            'publish_rectify_bgr': LaunchConfiguration('publish_rectify_bgr'),
+            'publish_origin_enable': LaunchConfiguration('publish_origin_enable'),
+            'publish_visual_enabled': LaunchConfiguration('publish_visual_enabled'),
         }.items(),
     )
 
     return LaunchDescription([
         mipi_rotation_arg,
         stereonet_frame_id_arg,
+        publish_rectify_bgr_arg,
+        publish_origin_enable_arg,
+        publish_visual_enabled_arg,
         stereonet_launch,
     ])

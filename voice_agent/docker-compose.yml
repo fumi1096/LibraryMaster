@@ -1,0 +1,16 @@
+services:
+  voice-agent:
+    build: .
+    container_name: voice-agent
+    stdin_open: true   # 保持标准输入开启（交互式 CLI）
+    tty: true          # 分配伪终端
+    environment:
+      - TZ=Asia/Shanghai
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+      - RAG_BASE_URL=${RAG_BASE_URL:-http://host.docker.internal:9014/rag}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+    command: python3 main.py

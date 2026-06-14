@@ -1,9 +1,8 @@
 """
 laserscan.launch.py — 点云 → LaserScan 转换
 
-包含两个节点:
-1. pc_republish: 修正 hobot_stereonet 点云时间戳（相机时钟→ROS时钟）
-2. pointcloud_to_laserscan: 点云→LaserScan
+节点:
+  pointcloud_to_laserscan: 点云→LaserScan
 
 用法:
   ros2 launch mycar_driver laserscan.launch.py
@@ -23,20 +22,13 @@ def generate_launch_description():
         'scan_topic', default_value='/scan',
         description='输出 LaserScan 话题名')
 
-    # 点云时间戳修正节点（相机时间 → ROS 时间）
-    pc_republish_node = Node(
-        package='mycar_driver',
-        executable='pc_republish',
-        name='pointcloud_republisher',
-    )
-
-    # 点云 → LaserScan 转换节点
+    # 点云 → LaserScan 转换节点 (直连 StereoNet 原始点云话题)
     pointcloud_to_laserscan_node = Node(
         package='pointcloud_to_laserscan',
         executable='pointcloud_to_laserscan_node',
         name='pointcloud_to_laserscan',
         remappings=[
-            ('cloud_in', '/pointcloud_republisher/pointcloud_fixed'),
+            ('cloud_in', '/StereoNetNode/stereonet_pointcloud2'),
             ('scan', LaunchConfiguration('scan_topic')),
         ],
         parameters=[{
@@ -59,6 +51,5 @@ def generate_launch_description():
     return LaunchDescription([
         stereo_frame_id_arg,
         scan_topic_arg,
-        pc_republish_node,
         pointcloud_to_laserscan_node,
     ])
