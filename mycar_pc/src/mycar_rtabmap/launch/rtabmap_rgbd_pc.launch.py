@@ -5,13 +5,15 @@ rtabmap_rgbd_pc.launch.py — RTAB-Map RGB-D 分布式建图 (PC 端)
   小车端:
     hobot_stereonet  → /StereoNetNode/rectify_left_image (bgr8, realtime ts)
                      → /StereoNetNode/stereonet_depth     (mono16, realtime ts)
-    image_republisher → /image_republisher/rgb_fixed       (bgr8, epoch ts)
-                      → /image_republisher/depth_fixed     (16UC1, epoch ts)
+    image_republisher → /image_republisher/rgb_fixed       (bgr8, epoch)
+                      → /image_republisher/rgb_fixed/compressed (JPEG, ~50KB/帧)
+                      → /image_republisher/depth_fixed     (16UC1, epoch)
+                      → /image_republisher/depth_fixed/compressedDepth (PNG 无损)
                       → /image_republisher/rgb_camera_info_fixed
     EKF              → /odom
 
   PC 端:
-    RTAB-Map RGB-D 模式 (ORB视觉词袋回环 + 深度→3D投影 + 里程计辅助)
+    RTAB-Map RGB-D 模式 (compressed RGB + compressedDepth, VPN 带宽友好)
     robot_state_publisher (本地 URDF, 确保 TF 可用)
 
 输出:
@@ -45,8 +47,8 @@ def generate_launch_description():
         description='启动 RViz2 可视化')
 
     database_path_arg = DeclareLaunchArgument(
-        'database_path', default_value='',
-        description='RTAB-Map 数据库路径 (空=默认 ~/.ros/rtabmap.db)')
+        'database_path', default_value='~/.ros/rtabmap.db',
+        description='RTAB-Map 数据库路径 (默认 ~/.ros/rtabmap.db)')
 
     # === robot_state_publisher (本地 URDF, 确保 camera_Link→base_footprint TF 可用) ===
     model_path = os.path.join(pkg_mycar_f, 'urdf', 'mycar_f.urdf')
@@ -56,7 +58,18 @@ def generate_launch_description():
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        parameters=[{'robot_description': robot_description}],
+        parameters=[{
+            'robot_description': robot_description,
+            'publish_robot_description': True,  # 发布 /robot_description 供 RViz 显示模型
+        }],
+    )
+
+    # === 图像中继: VPN 压缩 → 本地 raw (解决 VPN RELIABLE QoS 丢帧) ===
+    image_relay = Node(
+        package='mycar_rtabmap',
+        executable='image_relay',
+        name='image_relay',
+        output='screen',
     )
 
     # === RTAB-Map RGB-D 节点 ===
@@ -70,14 +83,12 @@ def generate_launch_description():
             'database_path': LaunchConfiguration('database_path'),
         }],
         remappings=[
-            # 矫正左图 → RGB (经 image_republisher 修正时间戳)
-            ('rgb/image',        '/image_republisher/rgb_fixed'),
-            ('rgb/camera_info',  '/image_republisher/rgb_camera_info_fixed'),
-            # 深度图 (经 image_republisher 修正时间戳, 16UC1 mm)
-            ('depth/image',      '/image_republisher/depth_fixed'),
-            # 深度相机内参 (与 RGB 共用同一相机, RTAB-Map 深度→3D 投影必需)
-            ('depth/camera_info','/image_republisher/rgb_camera_info_fixed'),
-            # 里程计
+            # RGB + Depth → 来自本地中继 (已解压)
+            ('rgb/image',        '/image_relay/rgb_raw'),
+            ('rgb/camera_info',  '/image_relay/camera_info_raw'),
+            ('depth/image',      '/image_relay/depth_raw'),
+            ('depth/camera_info','/image_relay/camera_info_raw'),
+            # 里程计 → 直接来自车端 (小话题, VPN 可靠)
             ('odom',             '/odom'),
         ],
     )
@@ -97,6 +108,7 @@ def generate_launch_description():
         use_rviz_arg,
         database_path_arg,
         robot_state_publisher,
+        image_relay,
         rtabmap_node,
         rviz_node,
     ])

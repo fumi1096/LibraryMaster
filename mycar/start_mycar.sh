@@ -31,9 +31,7 @@ cd "$SCRIPT_DIR"
 # ============================================
 source /opt/tros/humble/setup.bash
 
-# 清理 ROS daemon (避免残留)
-pkill -9 -f ros 2>/dev/null || true
-ros2 daemon stop 2>/dev/null || true
+# 不清理 ROS 进程，避免误杀 daemon 或其他节点
 
 # ============================================
 # 网络配置 (ROS 2 默认 DDS 通信)
@@ -52,11 +50,6 @@ echo "🌐 Fast-DDS config: $FASTRTPS_DEFAULT_PROFILES_FILE"
 # ============================================
 source ./install/setup.bash
 
-# 日志目录权限 (防止 TROS 日志写入失败)
-if [ ! -w /userdata/.roslog ]; then
-    sudo mkdir -p /userdata/.roslog 2>/dev/null || true
-    sudo chmod 777 /userdata/.roslog 2>/dev/null || true
-fi
 
 MODE=${1:-embedded}
 SERIAL=${2:-/dev/ttyUSB0}

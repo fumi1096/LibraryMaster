@@ -7,7 +7,7 @@
   <!-- base_footprint: 地面投影参考系，Nav2/导航必需 -->
   <link name="base_footprint"/>
   <joint name="base_footprint_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="0 0 0.066" rpy="0 0 0"/>
     <parent link="base_footprint"/>
     <child link="base_link"/>
   </joint>
@@ -361,7 +361,7 @@
     type="fixed">
     <origin
       xyz="0.0936947862405823 -0.0316811986946451 0.0440937058350375"
-      rpy="3.14159 0 0" />
+      rpy="0 0 0" />
     <parent
       link="base_link" />
     <child

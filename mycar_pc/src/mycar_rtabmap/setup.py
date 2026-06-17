@@ -27,6 +27,7 @@ setup(
     entry_points={
         'console_scripts': [
             'keyboard_control = mycar_rtabmap.keyboard_control:main',
+            'image_relay = mycar_rtabmap.image_relay:main',
         ],
     },
 )

@@ -36,9 +36,6 @@ source ./install/setup.bash 2>/dev/null || {
 # ============================================
 # 中间件配置
 # ============================================
-pkill -9 -f ros 2>/dev/null || true
-ros2 daemon stop 2>/dev/null || true
-
 export ROS_DOMAIN_ID=42
 export FASTRTPS_DEFAULT_PROFILES_FILE="$SCRIPT_DIR/config/fastdds.xml"
 
@@ -57,16 +54,6 @@ banner() {
     echo ""
 }
 
-# ============================================
-# 依赖检查
-# ============================================
-FAIL=0
-ros2 pkg prefix rtabmap_slam &>/dev/null || {
-    echo "❌ 缺少 ROS2 包: rtabmap_slam"
-    echo "   安装: sudo apt install ros-humble-rtabmap-slam"
-    FAIL=1
-}
-[ "$FAIL" -eq 1 ] && { echo ""; echo "请先安装缺失的依赖包再重试。"; exit 1; }
 
 # ============================================
 # 启动
@@ -76,10 +63,13 @@ case "$MODE" in
         banner "PC 端 — RTAB-Map RGB-D 3D 建图"
 
         # 清理旧数据库，从原点开始
-        rm -f ~/.ros/rtabmap.db
+        DB_PATH="$HOME/.ros/rtabmap.db"
+        rm -f "$DB_PATH"
+        log "已清理数据库: $DB_PATH"
 
         log "启动 RTAB-Map RGB-D + RViz2..."
-        ros2 launch mycar_rtabmap rtabmap_rgbd_pc.launch.py &
+        log "等待小车端数据 (约 5-10 秒)..."
+        ros2 launch mycar_rtabmap rtabmap_rgbd_pc.launch.py "database_path:=$DB_PATH" &
         RTAB_PID=$!
         sleep 5
 
@@ -93,10 +83,10 @@ case "$MODE" in
         log "============================================"
         log "  3D RGB-D 建图完成！"
         log ""
-        log "  数据库: ~/.ros/rtabmap.db"
+        log "  数据库已保存: $DB_PATH"
         log ""
         log "  查看 3D 地图:"
-        log "    rtabmap-databaseViewer ~/.ros/rtabmap.db"
+        log "    rtabmap-databaseViewer $DB_PATH"
         log ""
         log "  导出 2D 栅格地图 (Nav2 导航用):"
         log "    ros2 run nav2_map_server map_saver_cli -f ~/mycar_map"

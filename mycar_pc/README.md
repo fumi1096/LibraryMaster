@@ -94,11 +94,89 @@ mycar_pc/
 # 2. 确保小车端已启动
 cd ../mycar && ./start_mycar.sh mapping3d_distributed
 
-# 3. 启动 PC 端
+# 3. (可选) 数据流测试 — 验证所有建图核心话题正确传输
+./test_3d_mapping.sh
+
+# 4. 启动 PC 端
 ./start_pc.sh mapping3d_rgbd
 # 键盘遥控: i 前进, , 后退, j/l 转向, k 停止
 # Ctrl+C 停止, 数据库自动保存
 ```
+
+---
+
+## 数据流测试工具
+
+`test_3d_mapping.py` / `test_3d_mapping.sh` 用于验证小车端→PC端建图数据是否正确传输。
+
+### 一键测试（推荐）
+
+```bash
+./test_3d_mapping.sh
+```
+
+自动执行：重启 ROS2 daemon → 话题预检 → 逐个测试建图管线 → 汇总报告。
+
+### 高级用法
+
+```bash
+# 指定测试模块
+python3 test_3d_mapping.py --check rgb depth odom
+
+# 输出 JSON 报告
+python3 test_3d_mapping.py --json
+
+# 指定报告路径
+python3 test_3d_mapping.py --json /tmp/report.json
+
+# 查看帮助
+python3 test_3d_mapping.py --help
+```
+
+### 测试模块
+
+| 模块 | 测试内容 | 测试项 |
+|------|---------|:------:|
+| `connectivity` | 话题发现、网络连通性 | 4 |
+| `raw` | 原始 StereoNetNode 数据（camera_info + 点云） | 2 |
+| `camera_info` | CameraInfo K矩阵、P矩阵、frame_id、时间戳 | 5 |
+| `rgb` | RGB 编码、frame_id、分辨率、时间戳、像素完整性 | 6 |
+| `depth` | 深度编码、frame_id、时间戳、有效深度比例 | 5 |
+| `odom` | 里程计 frame_id、2D 模式验证、时间戳、协方差 | 5 |
+| `tf` | TF 树: odom→base_footprint, base_footprint→camera_Link | 2 |
+
+### 退出码
+
+- `0`: 全部通过，可以启动建图
+- `1`: 存在失败项，检查红色标记
+
+### 测试流程
+
+```bash
+# 1. 车端启动
+cd ../mycar && ./start_mycar.sh mapping3d_distributed
+
+# 2. 等待节点就绪 (约 5-10s)
+# 3. PC 端测试
+cd ../mycar_pc && ./test_3d_mapping.sh
+
+# 4. 确认全部通过后启动建图
+./start_pc.sh mapping3d_rgbd
+```
+
+### 并行订阅机制
+
+测试工具使用**一次性并行订阅**所有话题，而非逐个顺序订阅，确保不丢失消息。
+
+```
+旧版 (顺序):  订阅RGB → 等15s → 订阅深度 → 等15s → 订阅odom
+              ↑ 深度消息在等RGB时已被丢弃！
+
+新版 (并行):  同时订阅RGB+深度+odom → 等所有消息到达 → 统一分析
+              所有话题并行接收，无消息窗口丢失
+```
+
+如果大话题（RGB/深度）超时，工具会自动用 **BEST_EFFORT QoS**（避免 RELIABLE 重传拥塞）重试一次。若仍然超时，一般说明当前 VPN 网络状况不佳，可以稍后重试。小话题（CameraInfo、里程计）不受影响。
 
 ### 查看结果
 

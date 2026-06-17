@@ -9,32 +9,45 @@
           export ROS_DOMAIN_ID=42
     
     关键:
-      - 禁用 SHM (共享内存): 跨机器/VPN 通信不支持 SHM，必须走 UDP
+      - 禁用 SHM 传输层: 跨机器/VPN 通信不支持 SHM，必须走 UDP
+      - 仅保留 UDPv4 传输，关闭内置 SHM 传输
       - 异步发布: 避免嵌入式端因网络抖动阻塞
-      - 默认 Simple Discovery (组播): 依赖 VPN 转发组播或同子网
+      - Simple Discovery (组播): 依赖 VPN 转发组播或同子网
     ============================================================================
     -->
 
-    <!-- 默认发布者: 禁用 SHM，异步模式 -->
+    <!-- 传输层描述: 仅 UDPv4，禁用 SHM -->
+    <transport_descriptors>
+        <transport_descriptor>
+            <transport_id>udp_only</transport_id>
+            <type>UDPv4</type>
+        </transport_descriptor>
+    </transport_descriptors>
+
+    <!-- 默认发布者: 异步模式 -->
     <data_writer profile_name="default publisher profile" is_default_profile="true">
         <qos>
             <publishMode>
                 <kind>ASYNCHRONOUS</kind>
             </publishMode>
-            <data_sharing>
-                <kind>OFF</kind>
-            </data_sharing>
         </qos>
         <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
     </data_writer>
 
-    <!-- 默认订阅者: 禁用 SHM -->
+    <!-- 默认订阅者 -->
     <data_reader profile_name="default subscription profile" is_default_profile="true">
         <qos>
-            <data_sharing>
-                <kind>OFF</kind>
-            </data_sharing>
         </qos>
         <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
     </data_reader>
+
+    <!-- 默认 Participant: 仅使用 UDPv4，关闭内置 SHM 传输 -->
+    <participant profile_name="default_participant" is_default_profile="true">
+        <rtps>
+            <userTransports>
+                <transport_id>udp_only</transport_id>
+            </userTransports>
+            <useBuiltinTransports>false</useBuiltinTransports>
+        </rtps>
+    </participant>
 </profiles>

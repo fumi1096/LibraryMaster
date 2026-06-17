@@ -27,17 +27,17 @@ Visualization Manager:
       Name: MapCloud (3D)
       Enabled: true
       Topic:
-        Value: /rtabmap/cloud_map
+        Value: /cloud_map
       Style: Flat Squares
-      Size (m): 0.03
+      Size (m): 0.05
       Color Transformer: RGB8
     - Class: rviz_default_plugins/Map
       Name: GridMap (2D)
       Enabled: true
       Topic:
-        Value: /rtabmap/grid_map
+        Value: /grid_prob_map
       Alpha: 0.7
       Color Scheme: map
   Global Options:
-    Fixed Frame: odom
+    Fixed Frame: map
     Frame Rate: 10
