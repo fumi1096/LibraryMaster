@@ -31,6 +31,9 @@ setup(
             'keyboard_control = mycar_driver.keyboard_control:main',
             'pc_republish = mycar_driver.pointcloud_republisher:main',
             'image_republish = mycar_driver.image_republisher:main',
+            'scan_fixer = mycar_driver.scan_publisher:main',
+            'calibrate_odom = mycar_driver.calibrate_odom:main',
+            'verify_odom = mycar_driver.verify_odom:main',
         ],
     },
 )

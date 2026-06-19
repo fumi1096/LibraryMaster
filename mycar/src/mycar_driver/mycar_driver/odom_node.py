@@ -2,14 +2,16 @@
 """
 odom_node.py — 里程计节点（差速驱动模型）
 
-订阅 /vel_raw (Twist)，通过速度积分计算里程计，发布:
+订阅 /vel_raw (Twist)，通过梯形积分（匀加速模型）计算里程计，发布:
   /odom_raw — nav_msgs/Odometry
   odom → base_footprint TF（可选）
 
-运动学模型（差速驱动）:
-  delta_heading = angular_z * dt
-  delta_x = vx * cos(heading) * dt
-  delta_y = vx * sin(heading) * dt
+运动学模型（差速驱动，Heun 法二阶精度）:
+  v_avg = (v_prev + v_curr) / 2          # 梯形速度
+  heading_mid = heading + ω_avg * dt/2   # 中点航向
+  delta_heading = ω_avg * dt
+  delta_x = v_avg * cos(heading_mid) * dt
+  delta_y = v_avg * sin(heading_mid) * dt
 """
 import math
 
@@ -46,6 +48,11 @@ class OdomNode(Node):
         self._heading = 0.0
         self._last_time = self.get_clock().now()
 
+        # 梯形积分器状态（匀加速模型，拟合 PID 加减速）
+        self._last_vx = 0.0
+        self._last_angular = 0.0
+        self._first_sample = True
+
         # === TF 广播器 ===
         self._tf_broadcaster = TransformBroadcaster(self)
 
@@ -61,21 +68,37 @@ class OdomNode(Node):
             f'base={self._base_frame}, pub_tf={self._pub_odom_tf}')
 
     def _vel_callback(self, msg: Twist):
-        """速度回调：积分计算里程计"""
+        """速度回调：梯形积分（匀加速模型），拟合 PID 加减速过程"""
         now = self.get_clock().now()
-        dt = (now - self._last_time).nanoseconds * 1e-9  # 转换为秒
+        dt = (now - self._last_time).nanoseconds * 1e-9
         self._last_time = now
 
-        if dt <= 0.0 or dt > 0.5:  # 跳过异常时间间隔
+        if dt <= 0.0 or dt > 0.5:
             return
 
         vx = msg.linear.x * self._linear_scale
         angular = msg.angular.z * self._angular_scale
 
-        # 差速运动学积分
-        delta_heading = angular * dt
-        delta_x = vx * math.cos(self._heading) * dt
-        delta_y = vx * math.sin(self._heading) * dt
+        if self._first_sample:
+            # 第一条数据：用欧拉法（没有历史速度）
+            self._first_sample = False
+            delta_heading = angular * dt
+            delta_x = vx * math.cos(self._heading) * dt
+            delta_y = vx * math.sin(self._heading) * dt
+        else:
+            # 梯形积分：假设区间内匀加速，用平均速度
+            vx_avg = (self._last_vx + vx) * 0.5
+            angular_avg = (self._last_angular + angular) * 0.5
+
+            # 中点航向角（Heun 法，二阶精度）
+            heading_mid = self._heading + angular_avg * dt * 0.5
+
+            delta_heading = angular_avg * dt
+            delta_x = vx_avg * math.cos(heading_mid) * dt
+            delta_y = vx_avg * math.sin(heading_mid) * dt
+
+        self._last_vx = vx
+        self._last_angular = angular
 
         self._x += delta_x
         self._y += delta_y

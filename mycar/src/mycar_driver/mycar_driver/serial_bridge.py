@@ -129,6 +129,17 @@ class SerialBridge:
         with self._lock:
             self._bot.set_car_motion(vx, vy, angular)
 
+    def set_pid(self, kp, ki, kd, forever=False):
+        """
+        设置运动 PID 参数。
+
+        Args:
+            kp, ki, kd: PID 系数，范围 [0, 10.00]
+            forever:    True=永久保存到 Flash, False=临时生效
+        """
+        with self._lock:
+            self._bot.set_pid_param(kp, ki, kd, forever=forever)
+
     def stop(self):
         """紧急停止"""
         with self._lock:

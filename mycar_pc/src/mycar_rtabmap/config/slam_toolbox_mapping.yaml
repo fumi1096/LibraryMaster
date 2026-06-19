@@ -1,13 +1,12 @@
 # ============================================================================
-# slam_toolbox 在线异步建图配置 — mycar_f 差速轮小车
+# slam_toolbox 在线异步建图配置 — mycar_f 差速轮小车 (分布式 PC 端)
 # ============================================================================
-# 输入:  /scan (LaserScan, 来自双目深度→LaserScan 管线)
-#        /odom (EKF 融合里程计)
-#        TF 树 (odom→base_footprint, base_footprint→base_link, etc.)
+# 输入:  /scan (LaserScan, 来自小车端双目深度→LaserScan 管线, DDS 跨网络)
+#        /odom (EKF 融合里程计, 来自小车端)
+#        TF 树 (odom→base_footprint, 来自小车端 robot_state_publisher)
 # 输出:  /map (OccupancyGrid)
 #
-# 运行位置: 全本地模式 (嵌入式 RDK X5)
-# 后续可迁移到 PC 端 (分布式部署)
+# 运行位置: PC 端 (mycar_pc)
 # ============================================================================
 
 slam_toolbox:
@@ -39,8 +38,8 @@ slam_toolbox:
     max_laser_range: 5.0              # 双目深度可靠范围 5m
     minimum_travel_distance: 0.2      # 移动 20cm 创建关键帧
     minimum_travel_heading: 0.1       # 旋转 0.1rad 创建关键帧
-    scan_buffer_size: 5           # 减少缓存
-    scan_buffer_max_scan_size: 30 # 减少每帧点数
+    scan_buffer_size: 5               # 减少缓存
+    scan_buffer_max_scan_size: 30     # 减少每帧点数
     link_match_minimum_response_fine: 0.1
     link_scan_maximum_distance: 1.5
     loop_search_maximum_distance: 3.0

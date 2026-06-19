@@ -1,8 +1,8 @@
-# mycar_pc — PC 端 RGB-D 3D 建图工作空间
+# mycar_pc — PC 端 2D + 3D 建图工作空间
 
 ## 项目概述
 
-基于 RTAB-Map RGB-D 的 3D 视觉建图系统（PC 端），小车端通过 VPN 发布修正后的图像话题，PC 端消费数据完成建图。
+分布式建图系统 PC 端：消费小车端通过 VPN 发布的传感器数据，完成 2D (slam_toolbox) 或 3D (RTAB-Map RGB-D) 建图与可视化。
 
 **硬件要求**: x86 PC + NVIDIA GPU (推荐, RTAB-Map 特征提取)
 **软件栈**: ROS2 Humble + Fast-DDS + RTAB-Map
@@ -14,34 +14,39 @@
 | 系统 | ROS2 Humble (Ubuntu 22.04) | 标准 ROS2 发行版 |
 | 通信 | Fast-DDS Simple Discovery | `ROS_DOMAIN_ID=42`, UDP 组播 |
 | 网络 | OpenVPN | 跨机器 DDS 流量透传 |
-| SLAM | RTAB-Map (rtabmap_slam) | RGB-D 模式: ORB视觉特征 + 词袋回环 + ICP |
-| 可视化 | RViz2 | 预配置: MapCloud + MapGraph + Grid + RobotModel |
+| 2D SLAM | slam_toolbox (online_async) | 扫描匹配 + 位姿图优化 + 回环检测 |
+| 3D SLAM | RTAB-Map (rtabmap_slam) | RGB-D 模式: ORB视觉特征 + 词袋回环 + ICP |
+| 可视化 | RViz2 | 预配置: Map + LaserScan + TF + RobotModel |
 
 ### 架构
 
 ```
 [mycar — 小车端 RDK X5]                    [mycar_pc — PC 端]
-                                      
-image_republisher (小车端)                mycar_rtabmap
-  ├─ /rgb_fixed (bgr8, epoch)  ─────────→ rgb/image
-  ├─ /depth_fixed (16UC1, epoch) ───────→ depth/image
-  └─ /rgb_camera_info_fixed ────────────→ rgb/camera_info
-                                           depth/camera_info
-EKF (小车端)                              
-  └─ /odom ──────────────────────────────→ odom
-                                      
-                                        robot_state_publisher (mycar_f)
-                                          └─ TF: camera_Link → base_footprint
-                                      
-                                        RTAB-Map RGB-D
-                                          ├── ORB 视觉特征提取
-                                          ├── 深度→3D 投影
-                                          ├── 词袋回环检测
-                                          └── ICP 位姿优化
-                                              ↓
-                                          /rtabmap/cloud_map
-                                          /rtabmap/grid_map
-                                          /rtabmap/mapGraph
+
+【2D 分布式】
+bringup (小车端)
+  ├─ /scan (LaserScan) ──────────────────→ slam_toolbox
+  ├─ /odom (EKF) ────────────────────────→   ├── 扫描匹配
+  └─ TF 树 ──────────────────────────────→   ├── 位姿图优化
+                                              ├── 回环检测
+                                              └── /map (OccupancyGrid)
+                                           RViz2
+                                             ├─ Map (/map)
+                                             ├─ LaserScan (/scan)
+                                             ├─ TF
+                                             └─ RobotModel
+
+【3D 分布式】
+image_republisher (小车端)
+  ├─ /rgb_fixed (bgr8, epoch)  ─────────→ image_relay → RTAB-Map RGB-D
+  ├─ /depth_fixed (16UC1, epoch) ───────→                ├── ORB 特征提取
+  └─ /rgb_camera_info_fixed ────────────→                ├── 深度→3D 投影
+                                                          ├── 词袋回环检测
+EKF (小车端)                                              └── ICP 位姿优化
+  └─ /odom ─────────────────────────────→ odom                ↓
+                                                         /rtabmap/cloud_map
+                                        robot_state_publisher  /rtabmap/grid_map
+                                          └─ TF: camera_Link → base_footprint  /rtabmap/mapGraph
                                         keyboard_control → /cmd_vel
                                         RViz2 可视化
 ```
@@ -58,24 +63,38 @@ EKF (小车端)
 ```
 mycar_pc/
 ├── build.sh                          # colcon 构建
-├── start_pc.sh                       # 启动入口 (mapping3d_rgbd)
+├── start_pc.sh                       # 启动入口 (mapping2d / mapping3d_rgbd)
 ├── README.md
 ├── config/
 │   └── fastdds.xml                   # Fast-DDS (禁用 SHM)
 └── src/
     ├── mycar_rtabmap/
     │   ├── launch/
-    │   │   └── rtabmap_rgbd_pc.launch.py
+    │   │   ├── slam2d_pc.launch.py       # 2D slam_toolbox + RViz2
+    │   │   └── rtabmap_rgbd_pc.launch.py # 3D RTAB-Map + RViz2
     │   ├── config/
-    │   │   ├── rtabmap_rgbd.yaml
-    │   │   └── rtabmap_mapping.rviz
+    │   │   ├── slam_toolbox_mapping.yaml # slam_toolbox 参数
+    │   │   ├── slam_mapping_pc.rviz      # 2D RViz 布局
+    │   │   ├── rtabmap_rgbd.yaml         # RTAB-Map 参数
+    │   │   └── rtabmap_mapping.rviz      # 3D RViz 布局
     │   └── mycar_rtabmap/
-    │       └── keyboard_control.py
+    │       ├── keyboard_control.py
+    │       └── image_relay.py
     └── mycar_f/
         └── urdf/mycar_f.urdf
 ```
 
 ### 话题对接
+
+#### 2D 建图
+
+| slam_toolbox 订阅 | 小车端话题 | 类型 |
+|------------------|-----------|------|
+| `/scan` | `/scan` (pointcloud_to_laserscan) | `LaserScan` |
+| `/odom` | `/odom` (EKF 融合) | `Odometry` |
+| TF | `odom→base_footprint` (robot_state_publisher) | `TFMessage` |
+
+#### 3D 建图
 
 | RTAB-Map 订阅 | 小车端话题 | 原始话题 | 类型 |
 |--------------|-----------|---------|------|
@@ -91,16 +110,22 @@ mycar_pc/
 # 1. 构建
 ./build.sh
 
-# 2. 确保小车端已启动
+# ===== 2D 分布式建图 =====
+# 小车端 (先启动)
+cd ../mycar && ./start_mycar.sh mapping_distributed
+# PC 端
+cd ../mycar_pc && ./start_pc.sh mapping2d
+
+# ===== 3D 分布式建图 =====
+# 小车端 (先启动)
 cd ../mycar && ./start_mycar.sh mapping3d_distributed
-
-# 3. (可选) 数据流测试 — 验证所有建图核心话题正确传输
+# (可选) 数据流测试
 ./test_3d_mapping.sh
+# PC 端
+cd ../mycar_pc && ./start_pc.sh mapping3d_rgbd
 
-# 4. 启动 PC 端
-./start_pc.sh mapping3d_rgbd
 # 键盘遥控: i 前进, , 后退, j/l 转向, k 停止
-# Ctrl+C 停止, 数据库自动保存
+# Ctrl+C 停止, 地图自动保存
 ```
 
 ---
@@ -179,6 +204,16 @@ cd ../mycar_pc && ./test_3d_mapping.sh
 如果大话题（RGB/深度）超时，工具会自动用 **BEST_EFFORT QoS**（避免 RELIABLE 重传拥塞）重试一次。若仍然超时，一般说明当前 VPN 网络状况不佳，可以稍后重试。小话题（CameraInfo、里程计）不受影响。
 
 ### 查看结果
+
+#### 2D 地图
+
+```bash
+# 保存栅格地图 (建图过程中或结束后)
+ros2 run nav2_map_server map_saver_cli -f ~/mycar_map
+# 生成: mycar_map.pgm (图片) + mycar_map.yaml (元信息)
+```
+
+#### 3D 地图
 
 ```bash
 # 3D 点云地图

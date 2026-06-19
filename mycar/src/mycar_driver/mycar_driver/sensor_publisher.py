@@ -137,10 +137,10 @@ class SensorPublisher:
         self._last_encoder = list(enc)
         self._joint_pub.publish(js)
 
-        # === 周期性静音（每 2 秒强制，用 reset_car_state 兜底） ===
+        # === 周期性静音（每 2 秒，仅关蜂鸣器，不碰运动状态） ===
         self._beep_counter = getattr(self, '_beep_counter', 0) + 1
         if self._beep_counter % 40 == 0:
             try:
-                self._bridge._silence()
+                self._bridge.set_beep(0)
             except Exception:
                 pass

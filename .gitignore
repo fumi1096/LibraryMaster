@@ -12,6 +12,8 @@ mycar_pc/build/
 mycar_pc/install/
 mycar_pc/log/
 
+map/
+
 car/src/build/
 car/src/install/
 car/src/log/

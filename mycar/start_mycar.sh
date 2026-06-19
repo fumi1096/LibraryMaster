@@ -94,15 +94,19 @@ case "$MODE" in
             use_camera:=true \
             use_rviz:=false &
         EMBEDDED_PID=$!
-        sleep 5
 
-        # 验证核心话题
-        log "验证核心话题..."
-        if ros2 topic list 2>/dev/null | grep -q "/scan"; then
-            log "✅ /scan 就绪"
-        else
-            log "⚠️  /scan 未检测到，继续..."
-        fi
+        # 等待 /scan 和 /odom 都就绪（ekf 需要时间收敛）
+        log "等待核心话题就绪..."
+        for i in $(seq 1 15); do
+            sleep 2
+            SCAN_OK=$(ros2 topic list 2>/dev/null | grep -c "/scan" || true)
+            ODOM_OK=$(ros2 topic list 2>/dev/null | grep -c "/odom" || true)
+            if [ "$SCAN_OK" -ge 1 ] && [ "$ODOM_OK" -ge 1 ]; then
+                log "✅ /scan + /odom 就绪 (等待 ${i}x2 秒)"
+                break
+            fi
+            log "  等待中... /scan=$SCAN_OK /odom=$ODOM_OK"
+        done
 
         log "启动 slam_toolbox + RViz2..."
         ros2 launch mycar_slam slam.launch.py &
