@@ -1,15 +1,16 @@
 #!/bin/bash
 # ============================================================================
-# mycar 小车启动脚本 (v1.0)
+# mycar 小车启动脚本 (v2.0)
 # 四驱普通轮子 + 差速转向 + 双目深度相机
 #
 # 模式:
 #   driver    — 仅驱动 + 里程计（调试用）
 #   embedded  — 全栈启动：驱动 + 里程计 + IMU + 相机 + EKF
 #   mapping   — 建图模式：embedded + slam_toolbox + RViz2
-#   navigate  — 自主导航（需预先保存地图，Phase 6 实现）
+#   navigate  — 自主导航：embedded + Nav2 (AMCL + Smac2D + DWB)
 #   mapping_distributed  — 分布式 2D 建图（小车端：仅驱动+相机+EKF，SLAM 在 PC）
 #   mapping3d_distributed — 分布式 3D 建图（小车端：驱动+相机+EKF+体素滤波，RTAB-Map 在 PC）
+#   navigate_distributed  — 分布式导航（小车端：驱动+Nav2，监看在 PC）
 #
 # 用法:
 #   ./start_mycar.sh driver
@@ -53,6 +54,7 @@ source ./install/setup.bash
 
 MODE=${1:-embedded}
 SERIAL=${2:-/dev/ttyUSB0}
+MAP=${3:-}
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 banner() {
@@ -225,20 +227,82 @@ case "$MODE" in
         kill $IMAGE_PID 2>/dev/null
         ;;
 
+    navigate)
+        banner "mycar — Nav2 自主导航 (全本地)"
+        log "串口: $SERIAL"
+        [ -n "$MAP" ] && log "地图: $MAP"
+        log "节点: bringup + Nav2 (AMCL + Smac2D + DWB)"
+        log ""
+
+        MAP_ARGS="serial_port:=$SERIAL use_rviz:=false"
+        [ -n "$MAP" ] && MAP_ARGS="$MAP_ARGS map:=$MAP"
+
+        log "启动导航 (bringup 后台 + Nav2)..."
+        ros2 launch mycar_navigation navigation.launch.py $MAP_ARGS &
+        NAV_PID=$!
+
+        # 等待 Nav2 节点激活
+        log "等待 Nav2 节点激活 (lifecycle_manager)..."
+        sleep 8
+
+        log ""
+        log "============================================"
+        log "  Nav2 导航已启动！"
+        log ""
+        log "  小车端独立运行，无需 PC。"
+        log "  如需 PC 监看:"
+        log "    cd mycar_pc && ./start_pc.sh nav_monitor"
+        log ""
+        log "  设置初始位姿 (PC 端 RViz):"
+        log "    工具栏 → 2D Pose Estimate → 在地图上点击"
+        log "  发送导航目标 (PC 端 RViz):"
+        log "    工具栏 → 2D Nav Goal → 在地图上点击"
+        log "============================================"
+        log ""
+
+        log "按 Ctrl+C 停止导航"
+        wait $NAV_PID || true
+        ;;
+
+    navigate_distributed)
+        banner "mycar — 分布式导航 (小车端: 全栈 Nav2, PC 端: 监看)"
+        log "串口: $SERIAL"
+        [ -n "$MAP" ] && log "地图: $MAP"
+        log "节点: bringup + Nav2 (AMCL + Smac2D + DWB)"
+        log ""
+        log "============================================"
+        log "  PC 端操作:"
+        log "    cd mycar_pc && ./start_pc.sh nav_monitor"
+        log "============================================"
+        log ""
+
+        MAP_ARGS="serial_port:=$SERIAL use_rviz:=false"
+        [ -n "$MAP" ] && MAP_ARGS="$MAP_ARGS map:=$MAP"
+
+        ros2 launch mycar_navigation navigation.launch.py $MAP_ARGS &
+        NAV_PID=$!
+
+        log "小车端 Nav2 已启动，PC 端请启动监看"
+        log "按 Ctrl+C 停止"
+        wait $NAV_PID || true
+        ;;
+
     *)
-        echo "用法: $0 [driver|embedded|mapping|mapping3d|mapping_distributed|mapping3d_distributed] [串口路径]"
+        echo "用法: $0 <模式> [串口路径] [地图路径]"
         echo ""
         echo "  driver                  — 仅驱动 + 里程计（调试用）"
         echo "  embedded                — 全栈启动（驱动 + IMU + EKF + 相机）"
         echo "  mapping                 — 2D 建图（slam_toolbox，本地）"
         echo "  mapping3d               — 3D 建图（RTAB-Map，本地）"
+        echo "  navigate                — Nav2 自主导航（全本地）"
         echo "  mapping_distributed     — 分布式 2D 建图（小车端，SLAM 在 PC）"
         echo "  mapping3d_distributed   — 分布式 3D 建图（小车端，RTAB-Map 在 PC）"
+        echo "  navigate_distributed    — 分布式导航（小车端 Nav2, PC 监看）"
         echo ""
         echo "示例:"
-        echo "  $0 embedded              /dev/ttyUSB0"
-        echo "  $0 mapping_distributed   /dev/ttyUSB0"
-        echo "  $0 mapping3d_distributed /dev/ttyUSB0"
+        echo "  $0 navigate              /dev/ttyUSB0"
+        echo "  $0 navigate              /dev/ttyUSB0 ~/new_map.yaml"
+        echo "  $0 navigate_distributed  /dev/ttyUSB0 /path/to/map.yaml"
         exit 1
         ;;
 esac

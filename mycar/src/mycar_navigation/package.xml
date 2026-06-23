@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>mycar_navigation</name>
+  <version>0.1.0</version>
+  <description>mycar Nav2 autonomous navigation — AMCL + SmacPlanner2D + DWB controller</description>
+  <maintainer email="user@todo.com">user</maintainer>
+  <license>BSD</license>
+
+  <depend>nav2_bringup</depend>
+  <depend>nav2_map_server</depend>
+  <depend>nav2_amcl</depend>
+  <depend>nav2_planner</depend>
+  <depend>nav2_controller</depend>
+  <depend>nav2_behaviors</depend>
+  <depend>nav2_bt_navigator</depend>
+  <depend>nav2_lifecycle_manager</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

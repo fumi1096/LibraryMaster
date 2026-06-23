@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>mycar_navigation</name>
+  <version>0.1.0</version>
+  <description>mycar Nav2 PC-side monitoring — RViz2 configs for navigation visualization</description>
+  <maintainer email="user@todo.com">user</maintainer>
+  <license>BSD</license>
+
+  <depend>rviz2</depend>
+  <depend>nav2_bringup</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

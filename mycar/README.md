@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-基于 RDK X5 的四驱差速轮小车 3D/2D 建图系统（嵌入式端）。
+基于 RDK X5 的四驱差速轮小车 2D/3D 建图 + Nav2 自主导航系统（嵌入式端）。
 
 **硬件平台**: RDK X5 + Yahboom Rosmaster 驱动板 + 双目深度相机
 **软件栈**: TROS Humble (ROS2) + Fast-DDS + hobot_stereonet BPU 推理
@@ -19,6 +19,7 @@
 | 定位 | robot_localization (EKF) | 编码器+IMU 融合 → `/odom` |
 | 2D 建图 | slam_toolbox | 在线异步建图 (本地 RDK X5) |
 | 3D 建图 | RTAB-Map | 3D RGB-D / ICP (PC端) |
+| 导航 | Nav2 | AMCL + SmacPlanner2D + DWB 全栈导航 |
 
 ### 架构
 
@@ -60,6 +61,7 @@
 | `mycar_f` | CMake | SolidWorks URDF 模型 (7 links, STL meshes) |
 | `mycar_slam` | CMake | slam_toolbox 2D 在线异步建图 (本地模式) |
 | `mycar_rtabmap` | Python | RTAB-Map ICP 3D 建图 + 体素滤波 (本地模式) |
+| `mycar_navigation` | Python | Nav2 自主导航：AMCL 定位 + SmacPlanner2D 规划 + DWB 控制 |
 
 ### 启动模式
 
@@ -71,6 +73,8 @@
 | mapping3d | `./start_mycar.sh mapping3d` | embedded + RTAB-Map ICP |
 | mapping_distributed | `./start_mycar.sh mapping_distributed` | embedded (SLAM 在 PC) |
 | mapping3d_distributed | `./start_mycar.sh mapping3d_distributed` | embedded + image_republisher (RGB-D 在 PC) |
+| **navigate** | `./start_mycar.sh navigate` | **embedded + Nav2 全栈导航** |
+| navigate_distributed | `./start_mycar.sh navigate_distributed` | embedded + Nav2 (监看在 PC) |
 
 ---
 
@@ -155,6 +159,9 @@
 # 2D 建图 (slam_toolbox + RViz2 都在小车上)
 ./start_mycar.sh mapping
 
+# Nav2 自主导航 (全本地, 无需 PC)
+./start_mycar.sh navigate
+
 # ===== 分布式模式 (推荐: 算力卸载到 PC) =====
 # 2D 分布式建图 (小车端: 仅数据采集)
 ./start_mycar.sh mapping_distributed
@@ -163,6 +170,10 @@
 # 3D 分布式建图 (小车端: 数据采集 + 图像修正)
 ./start_mycar.sh mapping3d_distributed
 # → PC 端: cd ../mycar_pc && ./start_pc.sh mapping3d_rgbd
+
+# Nav2 分布式导航 (小车端 Nav2 全栈, PC 端监看 + 发目标)
+./start_mycar.sh navigate_distributed
+# → PC 端: cd ../mycar_pc && ./start_pc.sh nav_monitor
 ```
 
 ---
@@ -195,6 +206,130 @@ rtabmap-databaseViewer ~/.ros/rtabmap.db
 
 # 导出 2D 栅格地图 (用于 Nav2 导航)
 ros2 run nav2_map_server map_saver_cli -f ~/mycar_map
+```
+
+---
+
+## Nav2 自主导航
+
+### 数据流
+
+建图完成后 → 保存 .pgm/.yaml → 放入 `mycar_navigation/maps/` → Nav2 加载地图进行自主导航。
+
+```
+小车端 (RDK X5)
+  bringup ───→ /scan, /odom, TF (odom→base_footprint)
+  map_server ─→ /map (预建栅格地图, keepalive 每秒重发)
+  AMCL ──────→ map→odom TF (500-2000粒子, likelihood_field)
+  SmacPlanner2D → /plan (全局路径, Hybrid-A*)
+  DWB ───────→ /cmd_vel (局部控制, max 0.3m/s, 适配深度相机FOV盲区)
+  behaviors ─→ spin / backup / wait 恢复行为
+  bt_navigator 协调 + lifecycle_manager 自动激活
+                      │  DDS 跨网络
+                      ↓
+PC 端 (./start_pc.sh nav_monitor)
+  RViz2 ← /map, /scan, /plan, /local_plan, costmaps
+  用户 "2D Pose Estimate" 设初始位姿 → "2D Nav Goal" 发目标
+```
+
+### 快速启动
+
+```bash
+# 全本地导航 (无需 PC, 小车端自给自足)
+./start_mycar.sh navigate
+
+# 分布式导航 (PC 监看 + 发导航目标)
+./start_mycar.sh navigate_distributed
+# → PC 端: cd ../mycar_pc && ./start_pc.sh nav_monitor
+```
+
+### 换地图
+
+```bash
+# 方式一: 启动时指定 (不编译, 立即生效)
+./start_mycar.sh navigate /dev/ttyUSB0 ~/new_map.yaml
+./start_mycar.sh navigate_distributed /dev/ttyUSB0 /path/to/map.yaml
+
+# 方式二: 替换默认地图 (一劳永逸)
+cp ~/new_map.pgm ~/new_map.yaml mycar/src/mycar_navigation/maps/
+cd mycar && ./build.sh
+```
+
+### PC 端监看
+
+```bash
+cd mycar_pc
+./start_pc.sh scan_view     # 仅看 LaserScan (最轻量, 无 SLAM)
+./start_pc.sh mapping2d     # 2D 建图
+./start_pc.sh nav_monitor   # 导航监看 (设初始位姿 + 发 Nav Goal)
+```
+
+### 导航操作步骤
+
+1. 小车端启动: `./start_mycar.sh navigate_distributed`
+2. PC 端启动: `./start_pc.sh nav_monitor`
+3. RViz 中 **2D Pose Estimate** 点击小车的实际位置并拖拽方向
+4. RViz 中 **2D Nav Goal** 点击目标位置 → 小车自动规划并导航
+
+### 深度相机导航注意事项
+
+| 项目 | 说明 |
+|------|------|
+| LaserScan | 10Hz, 水平 FOV ~60-80° (非 360°), 可靠距离 5m |
+| 定位 | AMCL likelihood_field, 10Hz 足够, 注意盲区 |
+| 速度 | DWB max 0.3m/s, max_theta 0.8rad/s (保守) |
+| 代价地图 | local 4m×4m, obstacle_max_range 3m |
+| 恢复 | spin + backup + wait |
+
+### 航点管理
+
+航点与地图文件同目录配对存储，换地图自动切换。
+
+#### 存储规则
+
+```
+~/maps/living_room.yaml     → 航点 → ~/maps/living_room_waypoints.yaml
+~/maps/office.yaml          → 航点 → ~/maps/office_waypoints.yaml
+```
+
+`waypoints.yaml` 格式：
+```yaml
+kitchen:
+  x: 2.5
+  y: 1.3
+  yaw: 0.0
+door:
+  x: -0.8
+  y: 3.2
+  yaw: 1.57
+```
+
+#### 操作命令
+
+| 操作 | 命令 |
+|------|------|
+| 保存当前位置 | `./scripts/save_waypoint.sh kitchen` |
+| 导航到航点 | `./scripts/goto.sh kitchen` |
+| RViz 点地图标点 | `ros2 topic pub /set_waypoint_name std_msgs/String "data: 'door'" --once` → RViz Publish Point 点地图 |
+| 列出所有航点 | `ros2 topic pub /list_waypoints std_msgs/Empty --once` |
+
+#### 典型流程
+
+```bash
+# 1. 启动导航
+./start_mycar.sh navigate_distributed /dev/ttyUSB0 ~/maps/living_room.yaml
+
+# 2. PC 端 RViz 定位 (2D Pose Estimate)
+
+# 3. 把小车推到厨房 → 保存
+./scripts/save_waypoint.sh kitchen
+
+# 4. 随时导航到厨房
+./scripts/goto.sh kitchen
+
+# 5. 换地图, 航点自动切换
+./start_mycar.sh navigate_distributed /dev/ttyUSB0 ~/maps/office.yaml
+# → 读取 office_waypoints.yaml
 ```
 
 ---
