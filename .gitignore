@@ -3,6 +3,7 @@
 config.properties
 *~
 *.csv
+*.Identifier
 
 mycar/build/
 mycar/install/

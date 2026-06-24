@@ -3,8 +3,8 @@ import pandas as pd
 import pyarrow as pa
 import ast
 
-input_file = "/data/out.csv"    #输入文件路径，根据实际情况修改
-chunk_size = 100     #分片大小，具体数值可根据内存情况调整
+input_file = "out.csv"    #输入文件路径，根据实际情况修改
+chunk_size = 2000     #分片大小，具体数值可根据内存情况调整
 db_path = "/data/lancedb"       #Lancedb 数据库路径，根据实际情况修改
 embedding_size = 1024           #嵌入向量的维度
 db = lancedb.connect(db_path)
