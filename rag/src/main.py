@@ -15,6 +15,7 @@ def read_root():
         "endpoints": {
             "rag_query": "/rag/query",
             "rag_search": "/rag/search",
+            "rag_keyword_search": "/rag/keyword_search",
             "rag_tables": "/rag/tables",
             "rag_table_info": "/rag/table_info"
         }

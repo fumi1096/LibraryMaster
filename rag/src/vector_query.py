@@ -141,6 +141,55 @@ class VectorQuery:
         }
 
 
+    def keyword_search(self, keyword: str, count: int = 20) -> Dict[str, Any]:
+        """
+        按书名关键字查询
+
+        Args:
+            keyword: 书名关键字（支持模糊匹配）
+            count: 返回结果数量上限，默认 20
+
+        Returns:
+            {
+                "keyword": 查询关键字,
+                "results": [搜索结果列表],
+                "total": 结果数量
+            }
+        """
+        table = self.db.open_table(self.table_name)
+        df = table.to_pandas()
+
+        # 空关键字直接返回空结果
+        if not keyword or not keyword.strip():
+            return {
+                "keyword": keyword,
+                "results": [],
+                "total": 0,
+            }
+
+        # 模糊匹配书名中含有该关键字的记录
+        mask = df["书名"].str.contains(keyword, na=False, case=False)
+        matched = df[mask].head(count)
+
+        results = []
+        for _, row in matched.iterrows():
+            results.append({
+                "书名": row.get("书名", ""),
+                "作者": row.get("作者", ""),
+                "出版社": row.get("出版社", ""),
+                "关键词": row.get("关键词", ""),
+                "摘要": row.get("摘要", ""),
+                "中国图书分类号": row.get("中国图书分类号", ""),
+                "出版年月": str(row.get("出版年月", "")),
+            })
+
+        return {
+            "keyword": keyword,
+            "results": results,
+            "total": len(results),
+        }
+
+
 # ==================== 便捷函数 ====================
 
 # 全局单例（懒加载）
@@ -163,6 +212,11 @@ def embed_text(text: str) -> List[float]:
 def search_by_text(text: str, count: int = 5) -> Dict[str, Any]:
     """便捷函数：文本搜索"""
     return get_default_vq().search_by_text(text, count=count)
+
+
+def keyword_search(keyword: str, count: int = 20) -> Dict[str, Any]:
+    """便捷函数：书名关键字查询"""
+    return get_default_vq().keyword_search(keyword, count=count)
 
 
 # ==================== 命令行入口 ====================

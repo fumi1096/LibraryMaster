@@ -28,6 +28,15 @@ class TextQueryResponse(BaseModel):
     results: List[Dict[str, Any]]
     total: int
 
+class KeywordQuery(BaseModel):
+    keyword: str          # 书名关键字
+    count: int = 20       # 返回结果数量，默认为20
+
+class KeywordQueryResponse(BaseModel):
+    keyword: str
+    results: List[Dict[str, Any]]
+    total: int
+
 # 响应模型
 class SearchResult(BaseModel):
     书名: str
@@ -119,6 +128,31 @@ def search_by_text(query: TextQuery):
         raise HTTPException(
             status_code=500,
             detail=f"Search failed: {str(e)}"
+        )
+
+
+@router.post("/keyword_search", response_model=KeywordQueryResponse)
+def keyword_search(query: KeywordQuery):
+    """
+    书名关键字查询：输入关键字 → 模糊匹配书名
+
+    Args:
+        query: 包含关键字和返回数量的请求
+
+    Returns:
+        匹配的图书列表
+    """
+    try:
+        from vector_query import VectorQuery
+
+        vq = VectorQuery()
+        result = vq.keyword_search(query.keyword, count=query.count)
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Keyword search failed: {str(e)}"
         )
 
 

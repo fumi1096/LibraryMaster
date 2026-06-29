@@ -31,6 +31,7 @@ docker compose up -d --build
 |------|------|------|
 | GET | `/rag/` | 健康检查 |
 | POST | `/rag/search` | 文本搜索（自动向量化+检索） |
+| POST | `/rag/keyword_search` | 书名关键字查询（模糊匹配） |
 | POST | `/rag/query` | 直接传入向量检索 |
 | GET | `/rag/tables` | 列出数据表 |
 | GET | `/rag/table_info` | 表结构信息 |
@@ -50,6 +51,22 @@ resp = requests.post("http://localhost:9014/rag/search",
 print(resp.json())
 ```
 
+### 书名关键字查询示例
+
+```bash
+# HTTP 调用 - 按书名关键字模糊查询
+curl -X POST http://localhost:9014/rag/keyword_search \
+  -H "Content-Type: application/json" \
+  -d '{"keyword": "计算机", "count": 10}'
+
+# Python 调用
+import requests
+resp = requests.post("http://localhost:9014/rag/keyword_search",
+                     json={"keyword": "Python", "count": 5})
+for book in resp.json()["results"]:
+    print(f"《{book['书名']}》- {book['作者']}")
+```
+
 ## 环境变量
 
 通过 `docker-compose.yml` 注入，可按需修改：
@@ -65,11 +82,15 @@ print(resp.json())
 ## 测试
 
 ```bash
-# 容器外测试（仅 HTTP，需 requests）
+# 向量查询测试（容器外，需 requests）
 python3 test_vector_query.py
+
+# 书名关键字查询测试（容器外，需 requests）
+python3 test_keyword_query.py
 
 # 容器内测试（含本地直连）
 docker exec lancedb-server python test_vector_query.py
+docker exec lancedb-server python test_keyword_query.py
 ```
 
 ## 文件说明
@@ -83,7 +104,8 @@ rag/
 │   ├── vector_query.py     # 向量化 + 检索核心模块
 │   ├── rag_api.py          # FastAPI 接口定义
 │   └── main.py             # 服务入口
-├── test_vector_query.py    # 测试脚本
+├── test_vector_query.py    # 向量查询测试脚本
+├── test_keyword_query.py   # 书名关键字查询测试脚本
 ├── data/                   # LanceDB 数据（挂载到容器 /data）
 └── docs/接口文档.md         # 详细接口文档
 ```

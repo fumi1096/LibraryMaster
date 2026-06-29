@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # 安装依赖 (lancedb + fastapi + uvicorn)
-RUN pip install --no-cache-dir lancedb fastapi uvicorn pandas pydantic openai
+RUN pip install --no-cache-dir lancedb pylance fastapi uvicorn pandas pydantic openai
 
 #COPY ./src /app
 
