@@ -1,0 +1,20 @@
+[Unit]
+Description=LibraryMaster Kiosk Browser (Python WebKit)
+After=weston.service
+Requires=weston.service
+Requires=docker.service
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/tmp/run
+Environment=GDK_BACKEND=wayland
+Environment=LIBGL_ALWAYS_SOFTWARE=1
+Environment=WEBKIT_DISABLE_COMPOSITING_MODE=1
+ExecStartPre=/bin/sleep 3
+ExecStart=/usr/local/bin/voice-agent-kiosk
+Restart=on-failure
+RestartSec=10
+User=root
+
+[Install]
+WantedBy=multi-user.target

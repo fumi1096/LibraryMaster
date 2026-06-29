@@ -33,6 +33,9 @@ import queue
 import threading
 from typing import Optional
 
+# 将上级目录加入 sys.path，使 src/ 中的文件能引用根目录的 config.py
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
 import numpy as np
 import requests
 import sounddevice as sd

@@ -5,7 +5,7 @@ scan_publisher.py — 合并点云修正 + LaserScan 投影（单节点，零中
 将 pointcloud_republisher + pointcloud_to_laserscan 合并为一个节点：
   1. 订阅原始点云 /StereoNetNode/stereonet_pointcloud2
   2. 绕 X 轴旋转 180°（修正倒置安装）
-  3. 时间戳 realtime → epoch
+  3. 时间戳 steady→system 时钟转换 (对齐 TF 树 / slam_toolbox)
   4. 高度切片投影 → LaserScan
   5. 发布 /scan
 
@@ -14,9 +14,11 @@ scan_publisher.py — 合并点云修正 + LaserScan 投影（单节点，零中
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
+from rclpy.time import Time
 from sensor_msgs.msg import PointCloud2, LaserScan
 import numpy as np
 import math
+import time as _py_time
 
 
 class ScanPublisher(Node):
@@ -37,6 +39,12 @@ class ScanPublisher(Node):
         # === 发布 /scan ===
         self._pub = self.create_publisher(LaserScan, '/scan', 10)
         self._last_pub_time = self.get_clock().now()
+
+        # steady→system 时钟偏移 (hobot_stereonet 点云用 steady 时钟,
+        # 但 slam_toolbox/TF 树用 system 时钟, 需转换)
+        self._clock_offset = _py_time.time() - _py_time.monotonic()
+        self.get_logger().info(
+            f'clock_offset (steady→system) = {self._clock_offset:.1f}s')
 
         # === 订阅原始点云 ===
         self._sub = self.create_subscription(
@@ -111,8 +119,13 @@ class ScanPublisher(Node):
                 ranges[b] = distances[i]
 
         # --- 构建 LaserScan 消息 ---
+        # 点云时间戳是 steady 时钟 (boot seconds), 转为 system 时钟 (epoch)
+        # 这样 slam_toolbox 才能正确通过 TF 查询对应时刻的 odom→base_footprint
+        steady_sec = cloud.header.stamp.sec + cloud.header.stamp.nanosec * 1e-9
+        system_sec = steady_sec + self._clock_offset
         scan = LaserScan()
-        scan.header.stamp = now.to_msg()
+        scan.header.stamp = Time(seconds=system_sec,
+                                 clock_type=self.get_clock().clock_type).to_msg()
         scan.header.frame_id = self.get_parameter('target_frame').value
         scan.angle_min = a_min
         scan.angle_max = a_max

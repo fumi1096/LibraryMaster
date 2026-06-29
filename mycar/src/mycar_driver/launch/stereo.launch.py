@@ -43,6 +43,14 @@ def generate_launch_description():
         'publish_visual_enabled', default_value='False',
         description='发布可视化渲染图 (调试用，默认关闭)')
 
+    publish_pcd_enabled_arg = DeclareLaunchArgument(
+        'publish_pcd_enabled', default_value='0',
+        description='发布点云 (0=关闭节省带宽, 1=开启)')
+
+    pcd_downsample_arg = DeclareLaunchArgument(
+        'pointcloud_downsample_step', default_value='8',
+        description='点云降采样步长 (越大点数越少)，8=约7000点')
+
     # === hobot_stereonet 双目深度节点 ===
     # 复用 TROS 官方 launch 文件，只覆盖关键参数
     stereonet_launch = IncludeLaunchDescription(
@@ -70,6 +78,8 @@ def generate_launch_description():
             'publish_rectify_bgr': LaunchConfiguration('publish_rectify_bgr'),
             'publish_origin_enable': LaunchConfiguration('publish_origin_enable'),
             'publish_visual_enabled': LaunchConfiguration('publish_visual_enabled'),
+            'publish_pcd_enabled': LaunchConfiguration('publish_pcd_enabled'),
+            'pointcloud_downsample_step': LaunchConfiguration('pointcloud_downsample_step'),
         }.items(),
     )
 
@@ -79,5 +89,7 @@ def generate_launch_description():
         publish_rectify_bgr_arg,
         publish_origin_enable_arg,
         publish_visual_enabled_arg,
+        publish_pcd_enabled_arg,
+        pcd_downsample_arg,
         stereonet_launch,
     ])

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>图书馆智能助手</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/vendor/simple-keyboard.css">
+</head>
+<body>
+  <!-- ═══ 顶部搜索栏 ═══ -->
+  <header class="search-bar" id="searchBar">
+    <button class="search-btn" id="searchBtn" title="搜索">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <div class="search-input-wrap">
+      <input type="text" id="searchInput" placeholder="请输入书名/作者..." autocomplete="off">
+    </div>
+    <div class="search-mode">
+      <span class="mode-tab active" data-mode="keyword">传统</span>
+      <span class="mode-tab" data-mode="semantic">RAG</span>
+    </div>
+    <button class="config-btn" id="configBtn" title="RAG 配置">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <!-- ═══ 主内容区 ═══ -->
+  <main class="content" id="content">
+    <!-- 搜索结果的图书卡片容器 -->
+    <div class="search-results" id="searchResults"></div>
+
+    <!-- Agent 聊天记录容器 -->
+    <div class="chat-history" id="chatHistory"></div>
+
+    <!-- 空状态提示 -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#CBD5E0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <p class="empty-title">图书馆智能助手</p>
+      <p class="empty-desc">顶部搜索图书 · 底部与 AI 对话 · 长按语音输入</p>
+    </div>
+
+    <!-- 加载动画 -->
+    <div class="loading" id="loading" style="display:none">
+      <div class="spinner"></div>
+      <span>搜索中...</span>
+    </div>
+  </main>
+
+  <!-- ═══ 详情弹窗 ═══ -->
+  <div class="modal-overlay" id="detailModal" style="display:none">
+    <div class="modal-content" id="modalContent">
+      <button class="modal-close" id="modalClose">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- ═══ RAG 配置弹窗 ═══ -->
+  <div class="modal-overlay" id="configModal" style="display:none">
+    <div class="modal-content config-modal">
+      <button class="modal-close" id="configModalClose">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <h3>RAG 服务配置</h3>
+      <label class="config-label">RAG API 地址</label>
+      <input type="text" class="config-input" id="ragUrlInput" placeholder="http://host.docker.internal:9014/rag">
+      <div class="config-actions">
+        <button class="btn btn-primary" id="ragUrlSave">保存</button>
+        <button class="btn btn-secondary" id="ragUrlCancel">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 底部输入栏 ═══ -->
+  <footer class="input-bar" id="inputBar">
+    <button class="voice-btn" id="voiceBtn" title="长按语音输入，短按键盘">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <div class="input-wrap" id="inputWrap">
+      <input type="text" id="chatInput" placeholder="输入消息..." autocomplete="off">
+    </div>
+    <button class="interrupt-btn" id="interruptBtn" title="打断播放" style="display:none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+      <span>打断</span>
+    </button>
+    <button class="send-btn" id="sendBtn" title="发送">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </footer>
+
+  <!-- ═══ 虚拟键盘 (simple-keyboard) ═══ -->
+  <div class="keyboard-overlay" id="keyboardOverlay">
+    <div class="kb-preview" id="kbPreview">
+      <span class="kb-preview-text" id="kbPreviewText"></span>
+    </div>
+    <div class="simple-keyboard" id="keyboard"></div>
+  </div>
+
+  <!-- 调试指示器（红=失败 绿=就绪 蓝=弹出） -->
+  <div id="kb-debug" class="err"></div>
+
+  <!-- ═══ 脚本 ═══ -->
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/search.js"></script>
+  <script src="/static/js/books.js"></script>
+  <script src="/static/vendor/simple-keyboard.js"></script>
+  <script src="/static/vendor/layouts.js"></script>
+  <script src="/static/js/keyboard.js"></script>
+  <script src="/static/js/voice.js"></script>
+  <script>
+    // 应用初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      App.init();
+    });
+  </script>
+</body>
+</html>

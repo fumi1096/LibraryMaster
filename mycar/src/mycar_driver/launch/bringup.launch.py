@@ -108,7 +108,7 @@ def generate_launch_description():
         parameters=[{
             'pub_odom_tf': False,  # EKF 负责发布 TF
             'linear_scale': 1.0,
-            'angular_scale': 1.0,
+            'angular_scale': 0.96,  # 标定: 360°实转 → ~375°里程计 → 系数=360/375
         }],
     )
 
@@ -131,7 +131,7 @@ def generate_launch_description():
         name='ekf_se_odom',
         output='screen',
         parameters=[ekf_config],
-        remappings=[('odometry/filtered', 'odom')],  # EKF默认输出话题→slam_toolbox期望的/odom
+        remappings=[('odometry/filtered', 'odom')],
         condition=IfCondition(LaunchConfiguration('use_ekf')),
     )
 

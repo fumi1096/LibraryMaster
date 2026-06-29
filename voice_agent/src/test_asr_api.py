@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """快速验证讯飞中英识别大模型 API 是否可用"""
-import sys, time, wave, numpy as np, sounddevice as sd
+import sys, os, time, wave, numpy as np, sounddevice as sd
+
+# 将上级目录加入 sys.path，使 src/ 中的文件能引用同级模块
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
 from xunfei_asr import LiveAsrStream
 
 SAMPLE_RATE = 16000

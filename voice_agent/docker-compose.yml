@@ -1,6 +1,8 @@
 services:
   voice-agent:
-    build: .
+    build:
+      context: .
+      dockerfile: app/Dockerfile
     container_name: voice-agent
     ports:
       - "${AGENT_SERVER_PORT:-9015}:${AGENT_SERVER_PORT:-9015}"
@@ -9,8 +11,9 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
       - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+      - AGENT_SERVER_HOST=0.0.0.0
       - RAG_BASE_URL=${RAG_BASE_URL:-http://host.docker.internal:9014/rag}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    restart: "no"
+    restart: unless-stopped
     command: python3 agent_server.py

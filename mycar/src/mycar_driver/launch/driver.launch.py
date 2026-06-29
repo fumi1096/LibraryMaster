@@ -51,8 +51,8 @@ def generate_launch_description():
             'odom_frame': 'odom',
             'base_frame': 'base_footprint',
             'pub_odom_tf': True,
-            'linear_scale': 1.0431,
-            'angular_scale': 1.0426,
+            'linear_scale': 1.0408,
+            'angular_scale': 1.0421,
         }],
     )
 

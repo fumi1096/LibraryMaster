@@ -85,17 +85,19 @@ def execute_search_books(query_text: str, count: int = DEFAULT_SEARCH_COUNT) -> 
         resp.raise_for_status()
         data = resp.json()
 
-        # 精简结果，去掉向量数据只保留关键信息
+        # 精简结果，摘要截断控制 token，完整数据由前端卡片展示
         results = data.get("results", [])
         simplified = []
         for r in results:
+            summary = (r.get("摘要") or "")[:100]
+            keywords = (r.get("关键词") or "")[:50]
             simplified.append(
                 {
                     "书名": r.get("书名", ""),
                     "作者": r.get("作者", ""),
                     "出版社": r.get("出版社", ""),
-                    "关键词": r.get("关键词", ""),
-                    "摘要": r.get("摘要", ""),
+                    "关键词": keywords,
+                    "摘要": summary,
                     "中国图书分类号": r.get("中国图书分类号", ""),
                     "出版年月": r.get("出版年月", ""),
                     "相似度": round(r.get("similarity", 0), 4),

@@ -4,6 +4,7 @@ config.properties
 *~
 *.csv
 *.Identifier
+.venv/
 
 mycar/build/
 mycar/install/
@@ -14,6 +15,7 @@ mycar_pc/install/
 mycar_pc/log/
 
 map/
+maps/
 
 car/src/build/
 car/src/install/

@@ -27,11 +27,11 @@ def generate_launch_description():
         description='输出 LaserScan 话题')
 
     min_height_arg = DeclareLaunchArgument(
-        'min_height', default_value='0.05',
+        'min_height', default_value='0.01',
         description='点云最小高度（过滤地面），单位 m')
 
     max_height_arg = DeclareLaunchArgument(
-        'max_height', default_value='0.8',
+        'max_height', default_value='0.4',
         description='点云最大高度，单位 m')
 
     angle_min_arg = DeclareLaunchArgument(

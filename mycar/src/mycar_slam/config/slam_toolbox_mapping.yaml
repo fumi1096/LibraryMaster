@@ -24,11 +24,11 @@ slam_toolbox:
     map_name: /map
     map_frame: map
     map_start_pose: [0.0, 0.0, 0.0]
-    map_update_interval: 5.0          # 地图更新间隔 (s)
+    map_update_interval: 0.5        # 地图更新间隔 (s) — 0.5s=2Hz，灰色区域更快变已知
     resolution: 0.05                  # 5cm/pixel
 
     # --- 扫描匹配 ---
-    minimum_time_interval: 0.5        # 最小扫描处理间隔 (s)
+    minimum_time_interval: 0.2        # 最小扫描处理间隔 (s) — 降低以更频繁匹配
     transform_timeout: 5.0
     tf_buffer_duration: 30.0
     stack_size_to_use: 40000000
@@ -37,12 +37,12 @@ slam_toolbox:
 
     # --- 关键帧 ---
     max_laser_range: 5.0              # 双目深度可靠范围 5m
-    minimum_travel_distance: 0.2      # 移动 20cm 创建关键帧
-    minimum_travel_heading: 0.1       # 旋转 0.1rad 创建关键帧
-    scan_buffer_size: 5           # 减少缓存
-    scan_buffer_max_scan_size: 30 # 减少每帧点数
-    link_match_minimum_response_fine: 0.1
-    link_scan_maximum_distance: 1.5
+    minimum_travel_distance: 0.1     # 移动 15cm 创建关键帧
+    minimum_travel_heading: 0.06     # 旋转 0.08rad(~4.6°) 创建关键帧
+    scan_buffer_size: 20              # 增加缓存以保留更多历史扫描
+    scan_buffer_max_scan_size: 60     # 增加每帧扫描点数以提高匹配精度
+    link_match_minimum_response_fine: 0.35  # 从0.45降回0.25，旋转时也能通过匹配
+    link_scan_maximum_distance: 2.5
     loop_search_maximum_distance: 3.0
     do_loop_closing: true
     loop_match_minimum_chain_size: 10
@@ -50,24 +50,24 @@ slam_toolbox:
     loop_match_minimum_response_coarse: 0.35
     loop_match_minimum_response_fine: 0.45
 
-    # --- 位姿图 ---
-    correlation_search_space_dimension: 0.5
+    # --- 位姿图 (加大搜索空间以找到更优匹配) ---
+    correlation_search_space_dimension: 1.5   # 从0.5→0.8m，搜索范围更大
     correlation_search_space_resolution: 0.01
     correlation_search_space_smear_deviation: 0.1
 
     # --- 回环检测 ---
     loop_search_space_dimension: 8.0
     loop_search_space_resolution: 0.05
-    loop_search_space_smear_deviation: 0.03
+    loop_search_space_smear_deviation: 0.1
 
-    # --- 距离/角度方差 ---
-    distance_variance_penalty: 0.5
-    angle_variance_penalty: 1.0
+    # --- 距离/角度方差 (平衡：旋转时适度降低scan权重，但不至于完全抛弃) ---
+    distance_variance_penalty: 3    # 从3.0→1.5，运动时适度降低scan权重
+    angle_variance_penalty: 2.0       # 从5.0→2.0，旋转时适度降低scan角度权重
     fine_search_angle_offset: 0.00349
     coarse_search_angle_offset: 0.349
     coarse_angle_resolution: 0.0349
-    minimum_angle_penalty: 0.9
-    minimum_distance_penalty: 0.5
+    minimum_angle_penalty: 2.0        # 从4→1.0，角度惩罚下限恢复合理值
+    minimum_distance_penalty: 1.1     # 从1.5→0.8，距离惩罚下限恢复合理值
     use_response_expansion: true
 
     # --- 话题映射 ---

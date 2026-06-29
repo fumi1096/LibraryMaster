@@ -175,60 +175,61 @@ class DeepSeekLLM:
 
         # 流式解析状态
         accumulated_content = ""
-        tool_calls_acc: dict[int, dict] = {}  # index -> {id, name, arguments}
+        tool_calls_acc: dict[int, dict] = {}
 
-        for chunk in stream:
-            if not chunk.choices:
-                continue
+        try:
+            for chunk in stream:
+                if not chunk.choices:
+                    continue
 
-            delta = chunk.choices[0].delta
+                delta = chunk.choices[0].delta
 
-            # 文本内容
-            if delta.content:
-                accumulated_content += delta.content
-                callbacks.on_text(delta.content)
-                yield StreamEvent(type="text", text=delta.content)
+                if delta.content:
+                    accumulated_content += delta.content
+                    callbacks.on_text(delta.content)
+                    yield StreamEvent(type="text", text=delta.content)
 
-            # 工具调用 (流式模式下分多个 chunk 到达)
-            if delta.tool_calls:
-                for tc in delta.tool_calls:
-                    idx = tc.index
-                    if idx not in tool_calls_acc:
-                        tool_calls_acc[idx] = {
-                            "id": tc.id or "",
-                            "function": {"name": "", "arguments": ""},
-                        }
-                    if tc.id:
-                        tool_calls_acc[idx]["id"] = tc.id
-                    if tc.function:
-                        if tc.function.name:
-                            tool_calls_acc[idx]["function"]["name"] = tc.function.name
-                        if tc.function.arguments:
-                            tool_calls_acc[idx]["function"]["arguments"] += (
-                                tc.function.arguments
-                            )
+                if delta.tool_calls:
+                    for tc in delta.tool_calls:
+                        idx = tc.index
+                        if idx not in tool_calls_acc:
+                            tool_calls_acc[idx] = {
+                                "id": tc.id or "",
+                                "function": {"name": "", "arguments": ""},
+                            }
+                        if tc.id:
+                            tool_calls_acc[idx]["id"] = tc.id
+                        if tc.function:
+                            if tc.function.name:
+                                tool_calls_acc[idx]["function"]["name"] = tc.function.name
+                            if tc.function.arguments:
+                                tool_calls_acc[idx]["function"]["arguments"] += (
+                                    tc.function.arguments
+                                )
 
-            # 检查是否结束
-            finish_reason = chunk.choices[0].finish_reason
-            if finish_reason == "tool_calls":
-                # 所有工具调用已接收完毕
-                for idx in sorted(tool_calls_acc.keys()):
-                    tc = tool_calls_acc[idx]
-                    try:
-                        args = json.loads(tc["function"]["arguments"])
-                    except json.JSONDecodeError:
-                        args = {}
-                    callbacks.on_tool_call(tc["function"]["name"], args)
-                    yield StreamEvent(
-                        type="tool_call",
-                        tool_name=tc["function"]["name"],
-                        tool_arguments=args,
-                    )
+                finish_reason = chunk.choices[0].finish_reason
+                if finish_reason == "tool_calls":
+                    for idx in sorted(tool_calls_acc.keys()):
+                        tc = tool_calls_acc[idx]
+                        try:
+                            args = json.loads(tc["function"]["arguments"])
+                        except json.JSONDecodeError:
+                            args = {}
+                        callbacks.on_tool_call(tc["function"]["name"], args)
+                        yield StreamEvent(
+                            type="tool_call",
+                            tool_name=tc["function"]["name"],
+                            tool_arguments=args,
+                        )
 
-            elif finish_reason == "stop":
-                callbacks.on_complete()
-                yield StreamEvent(type="complete")
-                break
+                elif finish_reason == "stop":
+                    callbacks.on_complete()
+                    yield StreamEvent(type="complete")
+                    break
+        except Exception as e:
+            msg = f"流式响应中断: {str(e)}"
+            callbacks.on_error(msg)
+            yield StreamEvent(type="error", error=msg)
 
 
 # ============================================================

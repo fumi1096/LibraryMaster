@@ -13,6 +13,9 @@ import sys
 import argparse
 import os
 
+# 将 app/ 目录加入 sys.path，使主流程能正确导入 agent、llm、tools
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "app"))
+
 from config import RAG_BASE_URL
 from agent import LibraryAgent
 

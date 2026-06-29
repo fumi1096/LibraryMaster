@@ -17,7 +17,12 @@ KWS 关键词唤醒 — VAD (本地) + 讯飞流式 ASR (云端)
 import argparse
 import time
 import threading
+import os
+import sys
 from collections import deque
+
+# 将上级目录加入 sys.path，使 src/ 中的文件能引用同级模块和根目录 config.py
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import numpy as np
 import sounddevice as sd
@@ -102,10 +107,12 @@ class ASRWakeupDetector:
         for _ts, vad_status in boundaries:
             if vad_status == -1:   # 语音开始
                 if not self.is_speaking:
+                    print(f"  [KWS] VAD: 语音开始 ts={_ts}", flush=True)
                     self._on_speech_start()
                     speech_just_started = True
             elif vad_status >= 0:  # 语音结束
                 if self.is_speaking:
+                    print(f"  [KWS] VAD: 语音结束 ts={_ts}", flush=True)
                     self._on_speech_end()
 
         # 边录边传: VAD 之后 is_speaking 已是最新状态
@@ -134,7 +141,10 @@ class ASRWakeupDetector:
     # ================================================================
 
     def _on_speech_start(self) -> None:
-        if time.perf_counter() < self._cooldown_until:
+        now = time.perf_counter()
+        if now < self._cooldown_until:
+            remain = self._cooldown_until - now
+            print(f"  [KWS] 冷却中 ({remain:.1f}s)", flush=True)
             return  # 冷却中
 
         self.is_speaking = True

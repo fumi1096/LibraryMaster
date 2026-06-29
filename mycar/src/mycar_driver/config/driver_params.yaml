@@ -26,5 +26,8 @@ driver_node:
     # --- 传感器发布频率 ---
     sensor_publish_rate: 20.0           # IMU/电量/编码器 发布频率 (Hz)
 
+    # --- 电机控制 ---
+    use_pid: true                        # MCU 电机 PID (建图时可设为 false 开环控制)
+
     # --- 调试 ---
     debug: false                         # 是否输出调试日志

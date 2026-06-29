@@ -59,8 +59,8 @@ class KeyboardControl(Node):
         super().__init__('keyboard_control')
         self._pub = self.create_publisher(Twist, '/cmd_vel', 1)
 
-        self.declare_parameter('linear_speed', 0.2)
-        self.declare_parameter('angular_speed', 1.0)
+        self.declare_parameter('linear_speed', 0.12)   # 建图: 慢速减少畸变
+        self.declare_parameter('angular_speed', 0.2)   # 建图: 慢速旋转减少扫瞄畸变
         self._linear = self.get_parameter('linear_speed').value
         self._angular = self.get_parameter('angular_speed').value
 

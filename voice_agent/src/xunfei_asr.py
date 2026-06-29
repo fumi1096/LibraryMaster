@@ -18,10 +18,15 @@ import hmac
 import time
 import threading
 import queue
+import os
+import sys
 from datetime import datetime
 from urllib.parse import urlencode
 from typing import Callable, Optional, Generator
 from dataclasses import dataclass, field
+
+# 将上级目录加入 sys.path，使 src/ 中的文件能引用根目录的 config.py
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import websocket
 
@@ -595,6 +600,10 @@ class LiveAsrStream:
             self._set_error(str(e))
 
     def _on_ws_error(self, ws, error):
+        # 已经拿到最终结果，后续的连接关闭不算错误
+        if self._finished.is_set():
+            print(f"  [ASR] WebSocket 关闭 (已有结果): {error}", flush=True)
+            return
         print(f"  [ASR] WebSocket 错误: {error}", flush=True)
         self._set_error(str(error))
 

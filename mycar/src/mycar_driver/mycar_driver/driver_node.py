@@ -34,6 +34,7 @@ class DriverNode(Node):
         self.declare_parameter('angular_limit', 3.0)
         self.declare_parameter('invert_vx', False)
         self.declare_parameter('sensor_publish_rate', 20.0)
+        self.declare_parameter('use_pid', True)
         self.declare_parameter('debug', False)
 
         # 读取参数
@@ -45,6 +46,7 @@ class DriverNode(Node):
         angular_limit = self.get_parameter('angular_limit').value
         invert_vx = self.get_parameter('invert_vx').value
         sensor_rate = self.get_parameter('sensor_publish_rate').value
+        use_pid = self.get_parameter('use_pid').value
         debug = self.get_parameter('debug').value
 
         # === 初始化串口 ===
@@ -79,6 +81,11 @@ class DriverNode(Node):
             angular_limit=angular_limit,
             invert_vx=invert_vx)
 
+        # === 禁用 MCU 电机 PID（建图时开环控制更直接） ===
+        if not use_pid:
+            self._bridge.set_pid(0.0, 0.0, 0.0)
+            self.get_logger().warn('⚠ MCU 电机 PID 已禁用 (kp=ki=kd=0)')
+
         # === 输出信息 ===
         self.get_logger().info('=' * 50)
         self.get_logger().info('mycar_driver 驱动节点已启动')
@@ -87,6 +94,7 @@ class DriverNode(Node):
         self.get_logger().info(f'  关节: {joint_names}')
         self.get_logger().info(f'  速度限制: vx={linear_x_limit}, angular={angular_limit}')
         self.get_logger().info(f'  发布频率: {sensor_rate}Hz')
+        self.get_logger().info(f'  MCU PID: {"开启" if use_pid else "已禁用"}')
         self.get_logger().info('=' * 50)
 
     def destroy_node(self):
